@@ -12,7 +12,7 @@ Name your repository using the following format:
 
 ## TA
 
-Jeffrey
+Jeffrey Wang
 
 ## Objectives
 
