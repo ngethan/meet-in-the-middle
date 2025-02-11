@@ -7,14 +7,18 @@
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
-    "test": "jest --watchAll"
+    "test": "jest --watchAll",
+    "prepare": "husky"
   },
   "jest": {
     "preset": "jest-expo"
   },
   "dependencies": {
+    "@commitlint/cli": "^19.7.1",
+    "@commitlint/config-conventional": "^19.7.1",
     "@expo/vector-icons": "^14.0.2",
     "@react-navigation/native": "^7.0.14",
+    "conventional-changelog-atom": "^5.0.0",
     "elysia": "^1.2.12",
     "expo": "~52.0.30",
     "expo-font": "~13.0.3",
@@ -24,6 +28,9 @@
     "expo-status-bar": "~2.0.1",
     "expo-system-ui": "~4.0.7",
     "expo-web-browser": "~14.0.2",
+    "husky": "^9.1.7",
+    "lint-staged": "^15.4.3",
+    "prettier": "^3.5.0",
     "react": "18.3.1",
     "react-dom": "18.3.1",
     "react-native": "0.76.6",
@@ -40,5 +47,8 @@
     "react-test-renderer": "18.3.1",
     "typescript": "~5.3.3"
   },
-  "private": true
+  "private": true,
+  "lint-staged": {
+    "*": "prettier --write --ignore-unknown --cache --cache-location node_modules/.cache/.prettiercache"
+  }
 }
