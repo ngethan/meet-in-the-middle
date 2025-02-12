@@ -6,9 +6,9 @@ Name your repository using the following format:
 
 ## Team Members
 
--   **Ethan Ng**: e.ng@wustl.edu; ngethan
--   **Kevin Le**: l.tuan@wustl.edu; tuanle277
--   **Yerin Kang**: k.yerin@wustl.edu; yerin16
+- **Ethan Ng**: e.ng@wustl.edu; ngethan
+- **Kevin Le**: l.tuan@wustl.edu; tuanle277
+- **Yerin Kang**: k.yerin@wustl.edu; yerin16
 
 ## TA
 
