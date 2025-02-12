@@ -28,7 +28,7 @@ jobs:
         uses: ./tooling/github/setup
 
       - name: Lint
-        run: NODE_OPTIONS="--max-old-space-size=4096" bun lint
+        run: NODE_OPTIONS="--max-old-space-size=4096" pnpm lint
 
   format:
     runs-on: ubuntu-latest
@@ -39,4 +39,4 @@ jobs:
         uses: ./tooling/github/setup
 
       - name: Format
-        run: bun format
+        run: pnpm format
