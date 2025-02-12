@@ -45,6 +45,7 @@ export default function RootLayout() {
   // return <RootLayoutNav />;
   return (
     <Stack screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="mapp" options={{ title: 'Map' }} />
       <Stack.Screen name="index" options={{ title: 'Welcome', headerShown: false }} />
       <Stack.Screen name="home" options={{ title: 'Home' }} />
       <Stack.Screen name="auth" options={{ title: 'Auth' }} />
