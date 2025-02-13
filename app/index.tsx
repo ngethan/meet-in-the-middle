@@ -1,6 +1,7 @@
-import React, { useEffect, useRef } from 'react';
-import { View, Animated, StyleSheet, Easing, Image, TouchableOpacity } from 'react-native';
-import { Link } from 'expo-router';
+import React, { useEffect, useRef } from "react";
+import { View, Animated, StyleSheet, Easing, Image, TouchableOpacity, Text } from "react-native";
+import { Link } from "expo-router";
+import { LinearGradient } from "expo-linear-gradient"; // Correct import for Expo
 
 export default function WelcomeScreen() {
   const floatAnim = useRef(new Animated.Value(0)).current;
@@ -42,26 +43,28 @@ export default function WelcomeScreen() {
   return (
     <Link href="/auth" asChild>
       <TouchableOpacity style={styles.container} activeOpacity={0.8}>
-        <View style={styles.topContainer}>
-          <Image source={require('../assets/logo.png')} style={styles.logo} />
-          <Animated.Text style={[styles.welcomeText, { opacity: fadeAnim }]}>
-            Oddyseez
-          </Animated.Text>
-          <Animated.Text style={[styles.sloganText, { opacity: fadeAnim }]}>
-              Where Every Trip Start Together
-          </Animated.Text>
-        </View>
+      <LinearGradient colors={["#ffd691", "#ED8F03"]} style={styles.gradient}>
+      <View style={styles.topContainer}>
+            {/* <Image source={require("../assets/log.png")} style={styles.logo} /> */}
+            <Animated.Text style={[styles.welcomeText, { opacity: fadeAnim }]}>
+              Oddyseez
+            </Animated.Text>
+            <Animated.Text style={[styles.sloganText, { opacity: fadeAnim }]}>
+              Where Every Trip Starts Together
+            </Animated.Text>
+          </View>
 
-        <View style={styles.bottomContainer}>
-          <Animated.Text
-            style={[
-              styles.continueText,
-              { opacity: fadeAnim, transform: [{ translateY: floatingY }] },
-            ]}
-          >
-            Tap anywhere to continue
-          </Animated.Text>
-        </View>
+          <View style={styles.bottomContainer}>
+            <Animated.Text
+              style={[
+                styles.continueText,
+                { opacity: fadeAnim, transform: [{ translateY: floatingY }] },
+              ]}
+            >
+              Tap anywhere to continue
+            </Animated.Text>
+          </View>
+        </LinearGradient>
       </TouchableOpacity>
     </Link>
   );
@@ -70,44 +73,47 @@ export default function WelcomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#ffd69d',
+  },
+  gradient: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
   },
   topContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
+    marginTop: 300,
   },
   bottomContainer: {
     flex: 0.5,
-    justifyContent: 'flex-end',
-    alignItems: 'center',
-    marginBottom: 130,
+    justifyContent: "flex-end",
+    alignItems: "center",
+    marginBottom: 180,
   },
   logo: {
-    width: 200,
-    height: 200,
+    width: 400,
+    height: 400,
     marginBottom: 40,
-    resizeMode: 'contain',
+    resizeMode: "contain",
   },
   welcomeText: {
-    fontSize: 42,
-    fontWeight: 'bold',
-    color: '#1D3D47',
-    textAlign: 'center',
-    marginBottom: 40, 
+    fontSize: 56,
+    fontWeight: "bold",
+    color: "#FFF",
+    textAlign: "center",
+    marginBottom: 40,
   },
   sloganText: {
     fontSize: 16,
-    fontWeight: 'bold',
-    color: '#1D3D47',
-    textAlign: 'center',
+    fontWeight: "bold",
+    color: "#FFF",
+    textAlign: "center",
   },
   continueText: {
     fontSize: 18,
-    fontWeight: '500',
-    color: '#1D3D47',
+    fontWeight: "500",
+    color: "#FFF",
     opacity: 0.8,
   },
 });

@@ -9,7 +9,7 @@ import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { useEffect } from "react";
 import "react-native-reanimated";
-
+import { AuthProvider } from "@/context/AuthProvider";
 import { useColorScheme } from "@/components/useColorScheme";
 
 export {
@@ -19,7 +19,7 @@ export {
 
 export const unstable_settings = {
   // Ensure that reloading on `/modal` keeps a back button present.
-  initialRouteName: "(tabs)",
+  initialRouteName: "",
 };
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
@@ -48,13 +48,16 @@ export default function RootLayout() {
 
   // return <RootLayoutNav />;
   return (
+    <AuthProvider>
+
     <Stack screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="mapp" options={{ title: 'Map' }} />
       <Stack.Screen name="index" options={{ title: 'Welcome', headerShown: false }} />
       <Stack.Screen name="home" options={{ title: 'Home' }} />
       <Stack.Screen name="auth" options={{ title: 'Auth' }} />
       <Stack.Screen name="place/[id]" options={{ title: 'Place Details' }} />
+      <Stack.Screen name="map/[id]" options={{ title: 'Map' }} />
     </Stack>
+    </AuthProvider>
   );
 }
 

@@ -1,52 +1,188 @@
-import React, {useState} from 'react';
+import React, {useState, useEffect} from 'react';
 import { View, Text, TouchableOpacity, FlatList, Image, StyleSheet, Dimensions } from 'react-native';
 import { FontAwesome } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import NavigationDrawer from '../components/Drawer';
+import axios from 'axios';
+import { useAuth } from '@/context/AuthProvider';
+
+import * as Location from 'expo-location';
 
 const { width, height } = Dimensions.get('window'); // Get screen dimensions
 
-const trips = [
-  { id: '1', title: 'Tokyo, Japan', image: require('../assets/images/tokyo.jpg') },
-  { id: '2', title: 'Kyoto, Japan', image: require('../assets/images/kyoto.jpg') },
-  { id: '3', title: 'Japanese Dessert', image: require('../assets/images/dessert.jpg') },
-];
+const GOOGLE_MAPS_API_KEY = 'AIzaSyDkcz7TkarfHsrxmyT3DgGogjodxy_IChY';
+const RADIUS = 50000; // 50 km
+
 
 export default function HomeScreen() {
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [location, setLocation] = useState<Location.LocationObject | null>(null);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [address, setAddress] = useState<Location.LocationGeocodedAddress | null>(null);
+  const [places, setPlaces] = useState([]);
+  const [_, setLoading] = useState(true);
+
+  const fetchPopularDestinations = async () => {
+    // Request location permission
+    let { status } = await Location.requestForegroundPermissionsAsync();
+    if (status !== 'granted') {
+      alert('Permission Denied');
+      return;
+    }
+
+    // Get the user's current location
+    let location = await Location.getCurrentPositionAsync({});
+    const { latitude, longitude } = location.coords;
+
+    try {
+      // Google Places API request
+      const response = await axios.get(
+        `https://maps.googleapis.com/maps/api/place/nearbysearch/json`,
+        {
+          params: {
+            location: `${latitude},${longitude}`,
+            radius: RADIUS,
+            type: 'tourist_attraction', // Can be "restaurant", "museum", "hotel", etc.
+            key: GOOGLE_MAPS_API_KEY,
+          },
+        }
+      );
+
+      // Extract useful information from response
+      let results = response.data.results.map((place: any) => ({
+        id: place.place_id,
+        title: place.name,
+        description: place.vicinity || 'Popular place nearby.',
+        image: place.photos
+          ? `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photoreference=${place.photos[0].photo_reference}&key=${GOOGLE_MAPS_API_KEY}`
+          : 'https://via.placeholder.com/400', // Default image if no photo available
+        latitude: place.geometry.location.lat,
+        longitude: place.geometry.location.lng,
+        icon: place.icon,
+        reviews: place.reviews,
+        types: place.types,
+      }));
+      // Calculate distance from current location
+      results = results.map((place) => ({
+        ...place,
+        distance: calculateDistance(latitude, longitude, place.latitude, place.longitude),
+      }));
+
+      // Sort places by closest distance
+      results.sort((a, b) => a.distance - b.distance);
+
+      setPlaces(results);
+    } catch (error) {
+      console.error('Error fetching places:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchPopularDestinations();
+  }, []);
+
+  const { user, signOut } = useAuth();
   const router = useRouter();
+
+  const toggleDrawer = () => {
+    setDrawerOpen(!drawerOpen);
+  };
+
+  useEffect(() => {
+    async function getCurrentLocation() {
+      
+      let { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        setErrorMsg('Permission to access location was denied');
+        return;
+      }
+      try {
+        let location = await Location.getCurrentPositionAsync({});
+        setLocation(location);
+  
+        // Reverse geocode to get city, state, and country
+        let geoAddress = await Location.reverseGeocodeAsync(location.coords);
+        if (geoAddress.length > 0) {
+          setAddress(geoAddress[0]); // Get the first result
+        }
+      }
+      catch (error) {
+        console.error('Error fetching location:', error);
+        setErrorMsg('Error fetching location');
+      }
+    }
+
+    getCurrentLocation();
+    fetchPopularDestinations();
+  }, []);
+
+  let currentLocation = 'Waiting...';
+  if (errorMsg) {
+    currentLocation = errorMsg;
+  } else if (location) {
+    currentLocation = address ? `${address.city}, ${address.region}, ${address.country}` : 'Unknown location';
+  }
+
+  // Function to calculate the distance using the Haversine formula
+  const calculateDistance = (lat1:any, lon1:any, lat2:any, lon2:any) => {
+    const toRadians = (deg:any) => (deg * Math.PI) / 180;
+    const R = 6371; // Earth radius in km
+
+    const dLat = toRadians(lat2 - lat1);
+    const dLon = toRadians(lon2 - lon1);
+
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(toRadians(lat1)) *
+        Math.cos(toRadians(lat2)) *
+        Math.sin(dLon / 2) *
+        Math.sin(dLon / 2);
+
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return (R * c).toFixed(1); // Distance in km
+  };
 
   return (
     <View style={styles.container}>
-      {drawerOpen && <NavigationDrawer onClose={() => setDrawerOpen(false)} />}
-
+      <NavigationDrawer onClose={toggleDrawer} isOpen={drawerOpen} />
+      
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity>
+        <TouchableOpacity onPress={toggleDrawer}>
           <FontAwesome name="bars" size={32} color="black" />
         </TouchableOpacity>
-        <Text style={styles.title}> Japan</Text>
-        <TouchableOpacity>
+        <Text style={styles.title}> {currentLocation}</Text>
+        <TouchableOpacity onPress={() => (router.push("/profile"))}>
           <FontAwesome name="user-circle" size={32} color="black" />
         </TouchableOpacity>
       </View>
 
       {/* Trip List */}
       <FlatList
-        data={trips}
+        data={places}
         keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
+        renderItem={({ item }) => {
+          return (
+
           <TouchableOpacity 
             style={styles.tripContainer} 
             activeOpacity={0.8} 
             onPress={() => router.push(`/place/${item.id}`)} // Navigate to Place Details
           >
-            <Image source={item.image} style={styles.image} />
+            <Image 
+                source={{ uri: item.image }} // Ensure it's wrapped in { uri: 'URL' }
+                style={styles.image} 
+                resizeMode="cover" 
+              />
             <View style={styles.overlay}>
               <Text style={styles.tripTitle}>{item.title}</Text>
+              <Text style={styles.distance}>{item.distance} km</Text>
             </View>
+            <Image source={{ uri: item.icon }} style={{ width: 50, height: 50, position: 'absolute', top: 10, right: 10 }} />
           </TouchableOpacity>
-        )}
+  )}}
         contentContainerStyle={styles.listContainer}
         showsVerticalScrollIndicator={false}
       />
@@ -77,13 +213,20 @@ const styles = StyleSheet.create({
     shadowRadius: 5,
   },
   title: {
-    fontSize: 24,
+    fontSize: 16,
     fontWeight: 'bold',
     color: '#1D3D47',
   },
   listContainer: {
     paddingHorizontal: 20,
     paddingTop: 10,
+  },
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#1D3D47',
+    marginHorizontal: 20,
+    marginTop: 20,
   },
   tripContainer: {
     marginBottom: 20,
@@ -97,12 +240,13 @@ const styles = StyleSheet.create({
   },
   image: {
     width: '100%',
-    height: height * 0.25, // Increased height for better fit
+    height: height * 0.3, // Increased height for better fit
     resizeMode: 'cover',
     borderRadius: 18,
   },
   overlay: {
     position: 'absolute',
+    justifyContent: 'space-between',
     bottom: 0,
     left: 0,
     right: 0,
@@ -114,6 +258,11 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontWeight: 'bold',
     color: '#FFF',
+  },
+  distance: {
+    fontSize: 16,
+    fontWeight: "bold",
+    color: "#FFD700", // Gold color
   },
   fab: {
     position: 'absolute',
