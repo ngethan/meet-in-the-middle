@@ -6,11 +6,13 @@ import NavigationDrawer from '../components/Drawer';
 import axios from 'axios';
 import { useAuth } from '@/context/AuthProvider';
 
+
 import * as Location from 'expo-location';
 
 const { width, height } = Dimensions.get('window'); // Get screen dimensions
 
-const GOOGLE_MAPS_API_KEY = 'AIzaSyDkcz7TkarfHsrxmyT3DgGogjodxy_IChY';
+const GOOGLE_MAPS_API_KEY = process.env.EXPO_PUBLIC_API_KEY
+console.log(GOOGLE_MAPS_API_KEY)
 const RADIUS = 50000; // 50 km
 
 

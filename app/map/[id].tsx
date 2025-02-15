@@ -7,7 +7,7 @@ import axios from 'axios';
 import {router } from 'expo-router';
 
 const { width, height } = Dimensions.get('window'); // Get screen dimensions
-const GOOGLE_MAPS_API_KEY = 'AIzaSyDkcz7TkarfHsrxmyT3DgGogjodxy_IChY';
+const GOOGLE_MAPS_API_KEY = process.env.EXPO_PUBLIC_API_KEY;
 
 export default function Map() {
     const { id } = useLocalSearchParams(); // Get place ID from URL params
