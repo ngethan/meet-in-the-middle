@@ -105,7 +105,6 @@ export const users = pgTable(
       .notNull()
       .$defaultFn(() => uuidv4()),
     username: text("username"),
-    bio: text("bio"),
     firstName: text("firstName"),
     lastName: text("lastName"),
     fullName: text("fullName"),
@@ -116,8 +115,6 @@ export const users = pgTable(
       precision: 3,
       mode: "date",
     }),
-    zipcode: text("zipcode"),
-    location: text("location"),
     isDeveloper: boolean("isDeveloper").notNull().default(false),
   },
   (table) => {
