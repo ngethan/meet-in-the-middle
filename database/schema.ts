@@ -168,6 +168,7 @@ export const connections = pgTable(
         onUpdate: "cascade",
       }),
     status: connectionStatus("status").default("PENDING").notNull(),
+
     additionalNote: text("additionalNote").default("").notNull(),
   },
   (table) => {
