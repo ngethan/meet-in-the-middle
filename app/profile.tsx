@@ -64,11 +64,11 @@ export default function ProfileScreen() {
         </View>
       </View>
 
-      {/* Logout Button */}
+      {/* Logout Button
       <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
         <FontAwesome name="sign-out" size={18} color="#FFF" />
         <Text style={styles.logoutButtonText}>Sign Out</Text>
-      </TouchableOpacity>
+      </TouchableOpacity> */}
     </View>
   );
 }

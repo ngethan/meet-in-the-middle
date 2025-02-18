@@ -2,7 +2,7 @@ import React, {useState, useEffect} from 'react';
 import { View, Text, TouchableOpacity, FlatList, Image, StyleSheet, Dimensions } from 'react-native';
 import { FontAwesome } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import NavigationDrawer from '../components/Drawer';
+import NavigationDrawer from '../../components/Drawer';
 import axios from 'axios';
 import { useAuth } from '@/context/AuthProvider';
 
@@ -63,13 +63,13 @@ export default function HomeScreen() {
         types: place.types,
       }));
       // Calculate distance from current location
-      results = results.map((place) => ({
+      results = results.map((place: any) => ({
         ...place,
         distance: calculateDistance(latitude, longitude, place.latitude, place.longitude),
       }));
 
       // Sort places by closest distance
-      results.sort((a, b) => a.distance - b.distance);
+      results.sort((a: any, b: any) => a.distance - b.distance);
 
       setPlaces(results);
     } catch (error) {
@@ -158,8 +158,8 @@ export default function HomeScreen() {
       {/* Trip List */}
       <FlatList
         data={places}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => {
+        keyExtractor={(item: any) => item.id}
+        renderItem={({ item }: { item: any }) => {
           return (
 
           <TouchableOpacity 
@@ -216,6 +216,7 @@ const styles = StyleSheet.create({
   listContainer: {
     paddingHorizontal: 20,
     paddingTop: 10,
+    paddingBottom: 100, // Ensure FAB is visible
   },
   sectionTitle: {
     fontSize: 20,
@@ -224,8 +225,9 @@ const styles = StyleSheet.create({
     marginHorizontal: 20,
     marginTop: 20,
   },
+  /** 📌 Individual Trip Container*/
   tripContainer: {
-    marginBottom: 330,
+    marginTop: 20,
     borderRadius: 28,
     overflow: 'hidden',
     backgroundColor: '#FFF',
@@ -262,7 +264,7 @@ const styles = StyleSheet.create({
   },
   fab: {
     position: 'absolute',
-    bottom: 20,
+    bottom: "14%",
     right: 20,
     backgroundColor: '#ff8800',
     width: 70, // Ensure button is a perfect circle

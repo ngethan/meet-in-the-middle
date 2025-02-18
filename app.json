@@ -32,7 +32,9 @@
     "plugins": ["expo-router", "expo-apple-authentication"],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "GOOGLE_MAPS_API_KEY": "AIzaSyD89RPyiECoIyNtVq0TdCIekAH4vWZlEVs"
     }
-    
   }
 }

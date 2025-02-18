@@ -1,16 +1,20 @@
 import React, { useState } from "react";
-import { 
-  View, 
-  Text, 
-  TouchableOpacity, 
-  StyleSheet, 
-  Switch, 
-  Alert 
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  Switch,
+  Alert,
+  ScrollView,
+  Platform,
 } from "react-native";
 import { useAuth } from "../context/AuthProvider";
 import { useRouter } from "expo-router";
 import { supabase } from "../lib/supabase";
-import { FontAwesome } from "@expo/vector-icons";
+import { FontAwesome, MaterialIcons } from "@expo/vector-icons";
+import * as Localization from "expo-localization";
+import { Picker } from "@react-native-picker/picker";
 
 export default function SettingsScreen() {
   const { user, signOut } = useAuth();
@@ -18,14 +22,11 @@ export default function SettingsScreen() {
   const [darkMode, setDarkMode] = useState(false);
   const [emailNotifications, setEmailNotifications] = useState(true);
   const [pushNotifications, setPushNotifications] = useState(true);
+  const [language, setLanguage] = useState(Localization.locale);
 
-  // Toggle Dark Mode
+  // Toggle Settings
   const toggleDarkMode = () => setDarkMode(!darkMode);
-
-  // Toggle Email Notifications
   const toggleEmailNotifications = () => setEmailNotifications(!emailNotifications);
-
-  // Toggle Push Notifications
   const togglePushNotifications = () => setPushNotifications(!pushNotifications);
 
   // Change Password Function
@@ -35,9 +36,7 @@ export default function SettingsScreen() {
       "Enter a new password:",
       async (password) => {
         if (!password) return Alert.alert("Error", "Password cannot be empty");
-
         const { error } = await supabase.auth.updateUser({ password });
-
         if (error) Alert.alert("Error", error.message);
         else Alert.alert("Success", "Password changed successfully!");
       },
@@ -60,7 +59,7 @@ export default function SettingsScreen() {
             if (error) Alert.alert("Error", error.message);
             else {
               Alert.alert("Deleted", "Your account has been removed.");
-              signOut(); // Sign out the user
+              signOut();
             }
           },
         },
@@ -69,7 +68,7 @@ export default function SettingsScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <ScrollView style={styles.container}>
       <Text style={styles.settingsTitle}>Settings</Text>
 
       {/* Profile */}
@@ -84,7 +83,7 @@ export default function SettingsScreen() {
         <Text style={styles.settingText}>Change Password</Text>
       </TouchableOpacity>
 
-      {/* Notifications Settings */}
+      {/* Notifications */}
       <View style={styles.settingItem}>
         <FontAwesome name="bell" size={22} color="#444" />
         <Text style={styles.settingText}>Push Notifications</Text>
@@ -104,8 +103,27 @@ export default function SettingsScreen() {
         <Switch value={darkMode} onValueChange={toggleDarkMode} />
       </View>
 
+      {/* Language Selection */}
+      <View style={styles.settingItem}>
+        <MaterialIcons name="language" size={22} color="#444" />
+        <Text style={styles.settingText}>Language</Text>
+        <Picker
+          selectedValue={language}
+          onValueChange={(itemValue: any) => setLanguage(itemValue)}
+          style={styles.picker}
+        >
+          <Picker.Item label="English" value="en" />
+          <Picker.Item label="Español" value="es" />
+          <Picker.Item label="Français" value="fr" />
+          <Picker.Item label="Deutsch" value="de" />
+        </Picker>
+      </View>
+
       {/* Sign Out */}
-      <TouchableOpacity style={styles.logoutButton} onPress={() => signOut()}>
+      <TouchableOpacity style={styles.logoutButton} onPress={() => {
+        signOut()
+        router.push("/auth");
+        }}>
         <FontAwesome name="sign-out" size={22} color="#FFF" />
         <Text style={styles.logoutButtonText}>Sign Out</Text>
       </TouchableOpacity>
@@ -115,7 +133,7 @@ export default function SettingsScreen() {
         <FontAwesome name="trash" size={22} color="#FFF" />
         <Text style={styles.deleteButtonText}>Delete Account</Text>
       </TouchableOpacity>
-    </View>
+    </ScrollView>
   );
 }
 
@@ -123,21 +141,22 @@ export default function SettingsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F5F5F5",
+    backgroundColor: "#F9F9F9",
     padding: 20,
   },
   settingsTitle: {
-    fontSize: 24,
+    fontSize: 26,
     fontWeight: "bold",
-    marginBottom: 20,
     textAlign: "center",
+    color: "#333",
+    marginBottom: 20,
   },
   settingItem: {
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: "#FFF",
     padding: 15,
-    borderRadius: 10,
+    borderRadius: 12,
     marginVertical: 8,
     shadowOpacity: 0.1,
     shadowRadius: 3,
@@ -148,15 +167,21 @@ const styles = StyleSheet.create({
     fontSize: 18,
     flex: 1,
     marginLeft: 10,
+    color: "#444",
+  },
+  picker: {
+    width: Platform.OS === "ios" ? "40%" : "30%",
+    backgroundColor: "#FFF",
   },
   logoutButton: {
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: "#d9534f",
     padding: 15,
-    borderRadius: 10,
+    borderRadius: 12,
     marginTop: 20,
     justifyContent: "center",
+    elevation: 3,
   },
   logoutButtonText: {
     color: "#FFF",
@@ -169,9 +194,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: "#a94442",
     padding: 15,
-    borderRadius: 10,
+    borderRadius: 12,
     marginTop: 10,
     justifyContent: "center",
+    elevation: 3,
   },
   deleteButtonText: {
     color: "#FFF",
@@ -180,4 +206,3 @@ const styles = StyleSheet.create({
     marginLeft: 6,
   },
 });
-

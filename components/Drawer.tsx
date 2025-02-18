@@ -106,7 +106,7 @@ const styles = StyleSheet.create({
     width: width * 0.7, // 70% screen width
     height: height,
     backgroundColor: "#1D3D47", // Dark blue-green
-    paddingVertical: 40,
+    paddingVertical: "20%",
     paddingHorizontal: 25,
     position: "absolute",
     left: 0,
@@ -117,7 +117,7 @@ const styles = StyleSheet.create({
     shadowColor: "#000",
     shadowOpacity: 0.3,
     shadowRadius: 10,
-    elevation: 10,
+    elevation: 40,
   },
   closeButton: {
     position: "absolute",
@@ -130,7 +130,6 @@ const styles = StyleSheet.create({
   },
   username: {
     fontSize: 20,
-    fontWeight: "bold",
     color: "white",
     marginTop: 10,
   },

@@ -23,6 +23,7 @@ AppState.addEventListener("change", (state) => {
 
 export default function AuthScreen() {
   const [isSignUp, setIsSignUp] = useState(false);
+  const [fullName, setFullName] = useState(""); // ✅ Full Name State
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -30,12 +31,16 @@ export default function AuthScreen() {
   const router = useRouter();
 
   useEffect(() => {
-    // Check if user is already logged in
+    // ✅ Check if user is logged in & verified
     const checkUser = async () => {
       const { data } = await supabase.auth.getUser();
       if (data?.user) {
-        setUser(data.user);
-        router.replace("/home"); // Redirect if logged in
+        const { user } = data;
+        
+        // Check if email is verified
+        if (user.email_confirmed_at) {
+          router.replace("/(tabs)/home"); // 🚀 Redirect to app
+        }
       }
     };
     checkUser();
@@ -44,21 +49,37 @@ export default function AuthScreen() {
   // ✅ Email & Password Sign In
   async function signInWithEmail() {
     setLoading(true);
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
 
-    if (error) Alert.alert("Error", error.message);
-    else router.replace("/home");
+    if (error) {
+      Alert.alert("Error", error.message);
+    } else {
+      // 🚀 Redirect if email is verified
+      if (data.user?.email_confirmed_at) {
+        router.replace("/(tabs)/home");
+      } else {
+        Alert.alert("Check Email", "Verify your email before signing in.");
+      }
+    }
 
     setLoading(false);
   }
 
-  // ✅ Email & Password Sign Up
+  // ✅ Email & Password Sign Up (With Full Name)
   async function signUpWithEmail() {
     setLoading(true);
-    const { error } = await supabase.auth.signUp({ email, password });
+    const { data, error } = await supabase.auth.signUp({ email, password });
 
-    if (error) Alert.alert("Error", error.message);
-    else Alert.alert("Verify Email", "Check your inbox to verify your email!");
+    if (error) {
+      Alert.alert("Error", error.message);
+    } else {
+      // ✅ Store Full Name in `users` table
+      const userId = data?.user?.id;
+      if (userId) {
+        await supabase.from("users").insert([{ id: userId, email, full_name: fullName }]);
+      }
+      Alert.alert("Verify Email", "Check your inbox to verify your email!");
+    }
 
     setLoading(false);
   }
@@ -92,6 +113,20 @@ export default function AuthScreen() {
       {/* Authentication Box */}
       <View style={styles.authBox}>
         <Text style={styles.authTitle}>{isSignUp ? "Create Account" : "Sign In"}</Text>
+
+        {/* Full Name Input (Only for Sign Up) */}
+        {isSignUp && (
+          <View style={styles.inputContainer}>
+            <TextInput 
+              placeholder="Full Name"
+              placeholderTextColor="#666"
+              style={styles.input}
+              value={fullName}
+              autoCapitalize="words"
+              onChangeText={setFullName}
+            />
+          </View>
+        )}
 
         {/* Email Input */}
         <View style={styles.inputContainer}>
@@ -178,11 +213,6 @@ export default function AuthScreen() {
           </Text>
         </TouchableOpacity>
       </View>
-
-      {/* Skip to Home */}
-      <Link href="/home">
-        <Text style={styles.link}>Skip to Home</Text>
-      </Link>
     </View>
   );
 }
@@ -201,6 +231,7 @@ const styles = StyleSheet.create({
   },
   authBox: {
     width: "85%",
+    height: "45%",
     backgroundColor: "#FFA500",
     borderRadius: 20,
     padding: 25,
@@ -212,6 +243,16 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     color: "#fff",
     marginBottom: 20,
+  },
+  socialLogin: {
+    flexDirection: 'column',
+    justifyContent: 'center',
+    marginTop: 15,
+  },
+  button: {
+    width: 200,
+    height: 44,
+    marginBottom: 10,
   },
   inputContainer: {
     width: "100%",
@@ -248,16 +289,6 @@ const styles = StyleSheet.create({
     color: "#FFF",
     textDecorationLine: "underline",
   },
-  socialLogin: {
-    flexDirection: "column",
-    justifyContent: "center",
-    marginTop: 15,
-  },
-  button: {
-    width: 200,
-    height: 44,
-    marginBottom: 10,
-  },
   toggleText: {
     marginTop: 20,
     fontSize: 14,
@@ -268,4 +299,3 @@ const styles = StyleSheet.create({
     color: "#000",
   },
 });
-

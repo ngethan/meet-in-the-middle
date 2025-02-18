@@ -48,14 +48,17 @@ export default function RootLayout() {
 
   // return <RootLayoutNav />;
   return (
-    <AuthProvider>
+    <AuthProvider children={undefined}>
 
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen name="index" options={{ title: 'Welcome', headerShown: false }} />
       <Stack.Screen name="home" options={{ title: 'Home' }} />
       <Stack.Screen name="auth" options={{ title: 'Auth' }} />
+      <Stack.Screen name="(tabs)" options={{ title: 'Tabs' }} />
       <Stack.Screen name="place/[id]" options={{ title: 'Place Details' }} />
       <Stack.Screen name="map/[id]" options={{ title: 'Map' }} />
+      <Stack.Screen name="chat" options={{ title: 'Chat' }} />
+      
     </Stack>
     </AuthProvider>
   );
