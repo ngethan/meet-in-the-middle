@@ -1,5 +1,13 @@
 import React, { useEffect, useRef } from "react";
-import { View, Animated, StyleSheet, Easing, Image, TouchableOpacity, Text } from "react-native";
+import {
+  View,
+  Animated,
+  StyleSheet,
+  Easing,
+  Image,
+  TouchableOpacity,
+  Text,
+} from "react-native";
 import { Link } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient"; // Correct import for Expo
 
@@ -23,7 +31,7 @@ export default function WelcomeScreen() {
           easing: Easing.inOut(Easing.ease),
           useNativeDriver: true,
         }),
-      ])
+      ]),
     ).start();
 
     // Fade-in Animation
@@ -43,8 +51,8 @@ export default function WelcomeScreen() {
   return (
     <Link href="/auth" asChild>
       <TouchableOpacity style={styles.container} activeOpacity={0.8}>
-      <LinearGradient colors={["#ffd691", "#ED8F03"]} style={styles.gradient}>
-      <View style={styles.topContainer}>
+        <LinearGradient colors={["#ffd691", "#ED8F03"]} style={styles.gradient}>
+          <View style={styles.topContainer}>
             {/* <Image source={require("../assets/log.png")} style={styles.logo} /> */}
             <Animated.Text style={[styles.welcomeText, { opacity: fadeAnim }]}>
               Oddyseez

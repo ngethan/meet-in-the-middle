@@ -16,7 +16,7 @@
     "ios": {
       "supportsTablet": true,
       "usesAppleSignIn": true,
-      "usesGoogleSignIn": true
+      "bundleIdentifier": "dev.ethanng.mitm."
     },
     "android": {
       "adaptiveIcon": {
@@ -34,7 +34,10 @@
       "typedRoutes": true
     },
     "extra": {
-      "GOOGLE_MAPS_API_KEY": "AIzaSyD89RPyiECoIyNtVq0TdCIekAH4vWZlEVs"
+      "GOOGLE_MAPS_API_KEY": "AIzaSyD89RPyiECoIyNtVq0TdCIekAH4vWZlEVs",
+      "eas": {
+        "projectId": "ff0bc035-071c-463b-8c08-44a838fee878"
+      }
     }
   }
 }
