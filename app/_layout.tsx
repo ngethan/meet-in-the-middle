@@ -54,7 +54,6 @@ export default function RootLayout() {
         <Stack.Screen name="(tabs)" options={{ title: "Tabs" }} />
         <Stack.Screen name="place/[id]" options={{ title: "Place Details" }} />
         <Stack.Screen name="map/[id]" options={{ title: "Map" }} />
-        <Stack.Screen name="chat" options={{ title: "Chat" }} />
       </Stack>
     </AuthProvider>
   );

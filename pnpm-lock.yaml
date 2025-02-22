@@ -167,8 +167,8 @@ importers:
         specifier: ^6.6.0
         version: 6.6.1(juf6v3spjfrvgl7o7jnyn2aqyq)
       uuid:
-        specifier: ^11.0.5
-        version: 11.0.5
+        specifier: ^11.1.0
+        version: 11.1.0
     devDependencies:
       "@babel/core":
         specifier: ^7.25.2
@@ -10258,10 +10258,10 @@ packages:
       }
     engines: { node: ">= 0.4.0" }
 
-  uuid@11.0.5:
+  uuid@11.1.0:
     resolution:
       {
-        integrity: sha512-508e6IcKLrhxKdBbcA2b4KQZlLVp2+J5UwQ6F7Drckkc5N9ZJwFa4TgWtsww9UG8fGHbm6gbV19TdM5pQ4GaIA==,
+        integrity: sha512-0/A9rDy9P7cJ+8w1c9WD9V//9Wj15Ce2MPz8Ri6032usz+NfePxx5AcN3bN+r6ZL6jEo066/yNYB3tn4pQEx+A==,
       }
     hasBin: true
 
@@ -16926,7 +16926,7 @@ snapshots:
       react-native-parsed-text: 0.0.22(react-native@0.76.7(@babel/core@7.26.8)(@babel/preset-env@7.26.8(@babel/core@7.26.8))(@types/react@18.3.18)(react@18.3.1))(react@18.3.1)
       react-native-reanimated: 3.16.2(@babel/core@7.26.8)(react-native@0.76.7(@babel/core@7.26.8)(@babel/preset-env@7.26.8(@babel/core@7.26.8))(@types/react@18.3.18)(react@18.3.1))(react@18.3.1)
       react-native-safe-area-context: 4.12.0(react-native@0.76.7(@babel/core@7.26.8)(@babel/preset-env@7.26.8(@babel/core@7.26.8))(@types/react@18.3.18)(react@18.3.1))(react@18.3.1)
-      uuid: 11.0.5
+      uuid: 11.1.0
 
   react-native-helmet-async@2.0.4(react@18.3.1):
     dependencies:
@@ -18071,7 +18071,7 @@ snapshots:
 
   utils-merge@1.0.1: {}
 
-  uuid@11.0.5: {}
+  uuid@11.1.0: {}
 
   uuid@7.0.3: {}
 

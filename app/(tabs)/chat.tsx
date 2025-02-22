@@ -5,17 +5,17 @@ import {
   TextInput,
   FlatList,
   TouchableOpacity,
-  StyleSheet,
+  Animated,
   Modal,
   Alert,
   Dimensions,
-  ScrollView
+  ScrollView,
+  Easing,
 } from "react-native";
-import { GiftedChat } from "react-native-gifted-chat";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthProvider";
 import { FontAwesome } from "@expo/vector-icons";
-import { v4 as uuidv4 } from "uuid";
+import { randomUUID } from "crypto"; // Native Node.js 16+ alternative
 import moment from "moment";
 
 const { width, height } = Dimensions.get("window");
@@ -32,6 +32,26 @@ export default function ChatScreen() {
   const [isInviteModalVisible, setInviteModalVisible] = useState(false);
   const [groupMembers, setGroupMembers] = useState([]);
   const [isMembersModalVisible, setMembersModalVisible] = useState(false);
+  const [isFabMenuOpen, setFabMenuOpen] = useState(false);
+  const popupScale = React.useRef(new Animated.Value(0)).current;
+
+  React.useEffect(() => {
+    if (isFabMenuOpen) {
+      Animated.timing(popupScale, {
+        toValue: 1,
+        duration: 200,
+        easing: Easing.out(Easing.ease),
+        useNativeDriver: true,
+      }).start();
+    } else {
+      Animated.timing(popupScale, {
+        toValue: 0,
+        duration: 150,
+        easing: Easing.in(Easing.ease),
+        useNativeDriver: true,
+      }).start();
+    }
+  }, [isFabMenuOpen]);
 
   useEffect(() => {
     fetchUserGroups();
@@ -42,29 +62,38 @@ export default function ChatScreen() {
   /** 📌 Fetch groups where the user is a member */
   async function fetchUserGroups() {
     if (!user) return;
-  
+
     const { data: groupData, error: groupError } = await supabase
       .from("group_members")
       .select("chat_id")
       .eq("user_id", user.id);
-  
+
     if (groupError) {
       console.error("Error fetching user groups:", groupError);
       return;
     }
-  
+
     const groupIds = groupData.map((group) => group.chat_id);
-  
+
     if (groupIds.length > 0) {
       const { data: chatsData, error: chatsError } = await supabase
         .from("chats")
         .select("*")
         .in("id", groupIds)
         .order("created_at", { ascending: false });
-  
+
       if (!chatsError) setChats(chatsData);
     }
   }
+
+  const nonCryptoUUID = () =>
+    "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
+      const r = (Math.random() * 16) | 0,
+        v = c === "x" ? r : (r & 0x3) | 0x8;
+      return v.toString(16);
+    });
+
+  console.log(nonCryptoUUID());
 
   /** 📌 Fetch group members */
   const fetchGroupMembers = async () => {
@@ -76,6 +105,7 @@ export default function ChatScreen() {
       .eq("chat_id", selectedChat.id)
       .order("joined_at", { ascending: true });
 
+    console.log(data);
     if (!error) {
       setGroupMembers(data.map((member) => member.users));
       setMembersModalVisible(true);
@@ -84,11 +114,29 @@ export default function ChatScreen() {
     }
   };
 
+  const handleFabOption = (option: any) => {
+    switch (option) {
+      case "invite":
+        setInviteModalVisible(true);
+        break;
+      case "members":
+        fetchGroupMembers();
+        break;
+      default:
+        break;
+    }
+    setFabMenuOpen(false);
+  };
+
   /** 📌 Subscribe to real-time chat updates */
   function subscribeToChats() {
     return supabase
       .channel("chats")
-      .on("postgres_changes", { event: "*", schema: "public", table: "chats" }, fetchUserGroups)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "chats" },
+        fetchUserGroups,
+      )
       .subscribe();
   }
 
@@ -99,32 +147,32 @@ export default function ChatScreen() {
       .select("*")
       .eq("chat_id", chatId)
       .order("created_at", { ascending: true });
-  
+
     if (messagesError) {
       console.error("Error fetching messages:", messagesError);
       return;
     }
-  
+
     // Get unique user IDs from messages
     const userIds = [...new Set(messagesData.map((msg) => msg.user_id))];
-  
+
     // Fetch user details (full_name) from users table
     const { data: usersData, error: usersError } = await supabase
       .from("users")
       .select("id, full_name")
       .in("id", userIds);
-  
+
     if (usersError) {
       console.error("Error fetching user details:", usersError);
       return;
     }
-  
+
     // Create a map of user_id -> full_name
     const userMap: { [key: string]: string } = {};
     usersData.forEach((user) => {
       userMap[user.id] = user.full_name;
     });
-  
+
     // Map messages to include full_name instead of email
     setMessages(
       messagesData.map((msg) => ({
@@ -135,7 +183,7 @@ export default function ChatScreen() {
           _id: msg.user_id,
           name: userMap[msg.user_id] || "Unknown User", // Fallback if name is missing
         },
-      }))
+      })),
     );
   }
 
@@ -146,26 +194,26 @@ export default function ChatScreen() {
         .from("group_members")
         .select("chat_id")
         .eq("user_id", user.id);
-  
+
       if (userChatsError) throw userChatsError;
-  
+
       // Extract chat IDs
       const chatIds = userChats.map((item) => item.chat_id);
-  
+
       if (chatIds.length === 0) {
         setChats([]); // If user isn't in any chats, reset state
         return;
       }
-  
+
       // ✅ Step 2: Fetch chat group details
       const { data: chatsData, error: chatsError } = await supabase
         .from("chats")
         .select("*")
         .in("id", chatIds)
         .order("created_at", { ascending: false });
-  
+
       if (chatsError) throw chatsError;
-  
+
       // ✅ Step 3: Fetch latest messages for each chat
       const chatsWithLatestMessages = await Promise.all(
         chatsData.map(async (chat) => {
@@ -175,14 +223,14 @@ export default function ChatScreen() {
             .eq("chat_id", chat.id)
             .order("created_at", { ascending: false }) // Get latest first
             .limit(1);
-  
+
           if (messagesError) console.error(messagesError);
-  
+
           const latestMessage = latestMessages?.[0] || null;
-  
+
           let formattedMessage = "No messages yet";
           let timestamp = "";
-  
+
           if (latestMessage) {
             // ✅ Fetch sender's full name
             const { data: userData, error: userError } = await supabase
@@ -190,66 +238,67 @@ export default function ChatScreen() {
               .select("full_name")
               .eq("id", latestMessage.user_id)
               .single();
-  
+
             const senderName = userData?.full_name || "Unknown";
-  
+
             formattedMessage = `${senderName}: ${latestMessage.text}`;
             timestamp = latestMessage.created_at;
           }
-  
+
           return {
             ...chat,
             lastMessage: formattedMessage,
             lastMessageTime: timestamp,
           };
-        })
+        }),
       );
-  
+
       setChats(chatsWithLatestMessages);
     } catch (error) {
       console.error("Error fetching chats:", error);
     }
   }
-  
+
   const handleSendMessage = async () => {
     if (!selectedChat || !messageText.trim()) return;
-  
+
     // Fetch the user's full name from the 'users' table
     const { data: userData, error: userError } = await supabase
       .from("users")
       .select("full_name") // Assuming the column name is 'full_name'
       .eq("id", user.id)
       .single();
-  
+
     if (userError || !userData) {
       console.error("Error fetching user full name:", userError);
       return;
     }
-  
+
     const userName = userData.full_name || "Unknown User"; // Fallback in case the name is missing
-    console.log("User full name:", userName);
     const newMessage = {
       chat_id: selectedChat.id,
       user_id: user.id,
       text: messageText.trim(),
       created_at: new Date().toISOString(),
     };
-  
-    console.log("Sending message", newMessage);
-  
+
     const { error } = await supabase.from("messages").insert([newMessage]);
-  
+
     if (!error) {
       setMessages((prev: any) => [
         ...prev,
-        { _id: newMessage.chat_id, text: newMessage.text, user: { _id: user.id, name: userName }, createdAt: new Date() },
+        {
+          _id: newMessage.chat_id,
+          text: newMessage.text,
+          user: { _id: user.id, name: userName },
+          createdAt: new Date(),
+        },
       ]);
       setMessageText("");
     } else {
       console.error("Error sending message:", error);
     }
   };
-  
 
   /** 📌 Select chat and load messages */
   const handleSelectChat = async (chat: any) => {
@@ -259,28 +308,41 @@ export default function ChatScreen() {
 
   /** 📌 Create new group chat */
   const handleCreateGroup = async () => {
-    if (!newGroupName.trim()) return Alert.alert("Error", "Group name cannot be empty");
+    if (!newGroupName.trim())
+      return Alert.alert("Error", "Group name cannot be empty");
 
-    const newGroupId = uuidv4();
+    const newGroupId = nonCryptoUUID();
     const { error } = await supabase
       .from("chats")
-      .insert([{ id: newGroupId, name: newGroupName, created_at: new Date().toISOString() }]);
+      .insert([
+        {
+          id: newGroupId,
+          name: newGroupName,
+          created_at: new Date().toISOString(),
+        },
+      ]);
 
     const { error: memberError } = await supabase
-    .from("group_members")
-    .insert([{ chat_id: newGroupId, user_id: user.id, joined_at: new Date().toISOString() }]);
+      .from("group_members")
+      .insert([
+        {
+          chat_id: newGroupId,
+          user_id: user.id,
+          joined_at: new Date().toISOString(),
+        },
+      ]);
 
-    if (!error) {
+    if (!error && !memberError) {
       setNewGroupName("");
       setModalVisible(false);
       fetchUserGroups();
       handleSelectChat({ id: newGroupId, name: newGroupName });
     }
   };
-
   /** 📌 Invite user to group */
   const handleInviteUser = async () => {
-    if (!inviteEmail.trim() || !selectedChat) return Alert.alert("Error", "Enter a valid email");
+    if (!inviteEmail.trim() || !selectedChat)
+      return Alert.alert("Error", "Enter a valid email");
 
     // Get invited user's ID
     const { data: userData, error: userError } = await supabase
@@ -291,37 +353,69 @@ export default function ChatScreen() {
 
     if (userError || !userData) return Alert.alert("Error", "User not found");
 
+    // Check if the user is already in the group
+    const { data: existingMember, error: memberError } = await supabase
+      .from("group_members")
+      .select("id")
+      .eq("chat_id", selectedChat.id)
+      .eq("user_id", userData.id)
+      .single();
+
+    if (memberError && memberError.code !== "PGRST116") {
+      return Alert.alert("Error", "Failed to check group membership");
+    }
+
+    if (existingMember) {
+      return Alert.alert("Info", "User already in the group");
+    }
+
     // Add user to group
-    const { error } = await supabase.from("group_members").insert([
-      { chat_id: selectedChat.id, user_id: userData.id, joined_at: new Date().toISOString() },
-    ]);
+    const { error } = await supabase
+      .from("group_members")
+      .insert([
+        {
+          chat_id: selectedChat.id,
+          user_id: userData.id,
+          joined_at: new Date().toISOString(),
+        },
+      ]);
 
     if (!error) {
       setInviteEmail("");
       setInviteModalVisible(false);
       Alert.alert("Success", "User invited to the group!");
+    } else {
+      Alert.alert("Error", "Failed to add user to group");
     }
   };
 
   return (
-    <View style={styles.container}>
+    <View className="flex-1 bg-gray-100">
       {/* 📌 Header */}
-      <View style={styles.header}>
+      <View className="flex-row justify-between items-center px-6 py-16 bg-white shadow-lg border-b border-gray-200">
         {selectedChat && (
-          <TouchableOpacity onPress={() => setSelectedChat(null)} style={styles.backButton}>
+          <TouchableOpacity
+            onPress={() => {
+              setSelectedChat(null);
+              setMessages([]);
+              setMessageText("");
+            }}
+            className="p-2"
+          >
             <FontAwesome name="arrow-left" size={24} color="black" />
           </TouchableOpacity>
         )}
-        <Text style={styles.title}>{selectedChat ? selectedChat.name : "Messages"}</Text>
+        <Text className="text-lg font-bold text-gray-800">
+          {selectedChat ? selectedChat.name : "Messages"}
+        </Text>
         {selectedChat && (
-          <TouchableOpacity onPress={() => setInviteModalVisible(true)} style={styles.inviteButton}>
-            <FontAwesome name="user-plus" size={24} color="black" />
-          </TouchableOpacity>
-        )}
-          {/* Check Group Members Button (Only in Group Chat) */}
-        {selectedChat && (
-          <TouchableOpacity onPress={() => fetchGroupMembers()} style={styles.groupMembersButton}>
-            <FontAwesome name="users" size={24} color="black" />
+          <TouchableOpacity
+            className="p-2"
+            onPress={() => {
+              setFabMenuOpen(true);
+            }}
+          >
+            <FontAwesome name="ellipsis-v" size={24} color="black" />
           </TouchableOpacity>
         )}
       </View>
@@ -329,434 +423,211 @@ export default function ChatScreen() {
       {/* 📌 Chat List */}
       {!selectedChat ? (
         <FlatList
-        data={chats}
-        keyExtractor={(item: any) => item.id}
-        renderItem={({ item }: { item: any }) => (
-          <TouchableOpacity style={styles.chatItem} onPress={() => handleSelectChat(item)}>
-            <View style={styles.chatInfo}>
-              <Text style={styles.chatName}>{item.name}</Text>
-              <Text style={styles.lastMessage}>{item.lastMessage || "No messages yet..."}</Text>
-            </View>
-            <View style={styles.timestampContainer}>
-              <Text style={styles.timestamp}>
-                {item.last_message_time ? moment.utc(item.last_message_time).local().fromNow() : ""}
+          data={chats}
+          keyExtractor={(item) => item.id}
+          renderItem={({ item }) => (
+            <TouchableOpacity
+              className="bg-white rounded-xl p-4 mx-4 my-4 shadow-md border border-gray-200 hover:shadow-lg"
+              onPress={() => handleSelectChat(item)}
+            >
+              <Text className="text-lg font-bold text-gray-900">
+                {item.name}
               </Text>
-            </View>
-          </TouchableOpacity>
-        )}
-      />      
+              <Text className="text-sm text-gray-500">
+                {item.lastMessage || "No messages yet..."}
+              </Text>
+            </TouchableOpacity>
+          )}
+        />
       ) : (
-        
-        <View style={styles.chatContainer}>
-          <>
+        <View className="flex-1">
           {/* 📌 Chat Messages */}
-          <ScrollView style={styles.messagesContainer}>
-            {messages.map((msg:any) => {
+          <ScrollView className="flex-1 px-4 py-2">
+            {messages.map((msg) => {
               const isMyMessage = msg.user._id === user.id;
               return (
                 <View
                   key={msg._id}
-                  style={[
-                    styles.messageContainer,
-                    isMyMessage ? styles.myMessage : styles.otherMessage,
-                  ]}
+                  className={`p-3 rounded-xl my-2 max-w-[75%] ${
+                    isMyMessage
+                      ? "bg-yellow-400 self-end shadow-lg"
+                      : "bg-gray-200 self-start"
+                  }`}
                 >
-                  {/* User Name */}
-                  <Text style={styles.messageSender}>{msg.user.name || "Unknown User"}</Text>
-
-                  {/* Message Text */}
-                  <Text style={styles.messageText}>{msg.text}</Text>
-
-                  {/* Timestamp */}
-                  <Text style={styles.messageTimestamp}>
-                    {new Date(msg.createdAt).toLocaleTimeString([], {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
+                  <Text className="text-sm font-bold">{msg.user.name}</Text>
+                  <Text className="text-base">{msg.text}</Text>
+                  <Text className="text-xs text-gray-600 self-end mt-1">
+                    {moment(msg.createdAt).format("hh:mm A")}
                   </Text>
                 </View>
               );
             })}
           </ScrollView>
 
-        </>
-          {/* 📌 Send Message Input Box */}
-          <View style={styles.sendMessageContainer}>
+          {/* 📌 Send Message Input */}
+          <View className="flex-row items-center px-4 py-3 bg-white border-t border-gray-300 pb-40">
             <TextInput
-              style={styles.sendMessageInput}
+              className="flex-1 p-3 bg-gray-100 rounded-full text-base border border-gray-300"
               placeholder="Type a message..."
               value={messageText}
               onChangeText={setMessageText}
             />
-            <TouchableOpacity style={styles.sendButton} onPress={handleSendMessage}>
+            <TouchableOpacity
+              className="ml-3 p-3 bg-orange-500 rounded-full shadow-lg"
+              onPress={handleSendMessage}
+            >
               <FontAwesome name="send" size={20} color="white" />
             </TouchableOpacity>
           </View>
         </View>
       )}
 
-    {/* 📌 Create Group Button (Only when viewing group list) */}
-    {!selectedChat && (
-      <TouchableOpacity style={styles.fab} onPress={() => setModalVisible(true)}>
-        <FontAwesome name="plus" size={30} color="white" />
-      </TouchableOpacity>
-    )}
+      {/* 📌 Create Group Button */}
+      {!selectedChat && (
+        <TouchableOpacity
+          className="absolute bottom-40 right-6 bg-orange-500 w-16 h-16 rounded-full flex items-center justify-center shadow-lg"
+          onPress={() => setModalVisible(true)}
+        >
+          <FontAwesome name="plus" size={30} color="white" />
+        </TouchableOpacity>
+      )}
 
-      {/* 📌 Create Group Modal */}
-      <Modal visible={isModalVisible} transparent animationType="slide">
-        <View style={styles.modalContainer}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Create New Group</Text>
-            <TextInput
-              style={styles.modalInput}
-              placeholder="Group Name"
-              value={newGroupName}
-              onChangeText={setNewGroupName}
-            />
-            <View style={styles.modalButtonContainer}>
-              <TouchableOpacity style={styles.createButton} onPress={handleCreateGroup}>
-                <Text style={styles.createText}>Create</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.cancelButton} onPress={() => setModalVisible(false)}>
-                <Text style={styles.cancelText}>Cancel</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
-
-      {/* 📌 Invite User Modal */}
-      <Modal visible={isInviteModalVisible} transparent animationType="slide">
-        <View style={styles.modalContainer}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Invite User</Text>
-            <TextInput
-              style={styles.modalInput}
-              placeholder="Enter user email"
-              value={inviteEmail}
-              onChangeText={setInviteEmail}
-            />
-            <View style={styles.modalButtonContainer}>
-              <TouchableOpacity style={styles.createButton} onPress={handleInviteUser}>
-                <Text style={styles.createText}>Invite</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.cancelButton} onPress={() => setInviteModalVisible(false)}>
-                <Text style={styles.cancelText}>Cancel</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
+      {/* 📌 Pop-Up Menu */}
+      <Animated.View
+        className="absolute top-28 right-6 bg-white shadow-lg rounded-lg p-3 space-y-2"
+        style={{
+          transform: [{ scale: popupScale }],
+          opacity: popupScale,
+        }}
+      >
+        <TouchableOpacity
+          onPress={() => handleFabOption("invite")}
+          className="flex-row items-center space-x-3 p-2 rounded-lg bg-gray-50 active:bg-gray-100"
+          activeOpacity={0.7}
+        >
+          <FontAwesome name="user-plus" size={22} color="black" />
+          <Text className="text-base text-gray-800">Invite User</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          onPress={() => handleFabOption("members")}
+          className="flex-row items-center space-x-3 p-2 rounded-lg bg-gray-50 active:bg-gray-100"
+          activeOpacity={0.7}
+        >
+          <FontAwesome name="users" size={22} color="black" />
+          <Text className="text-base text-gray-800">See Members</Text>
+        </TouchableOpacity>
+      </Animated.View>
 
       {/* 📌 Group Members Modal */}
       <Modal visible={isMembersModalVisible} transparent animationType="slide">
-        <View style={styles.modalContainer}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Group Members</Text>
-            
+        <View className="flex-1 justify-center items-center bg-black/50 backdrop-blur-md">
+          <View className="bg-white w-[85%] rounded-2xl p-6 shadow-xl">
+            <Text className="text-2xl font-bold text-gray-900 mb-4 text-center">
+              Group Members
+            </Text>
+
             {groupMembers.length > 0 ? (
-              <FlatList
-                data={groupMembers}
-                keyExtractor={(item: any) => item.id}
-                renderItem={({ item }: { item: any }) => (
-                  <View style={styles.memberItem}>
-                    <Text style={styles.memberText}>{item.full_name || item.email}</Text>
+              <ScrollView className="max-h-[300px]">
+                {groupMembers.map((member: any, index: any) => (
+                  <View
+                    key={index}
+                    className="bg-gray-100 p-3 rounded-lg mb-2 shadow-sm"
+                  >
+                    <Text className="text-lg font-semibold text-gray-800">
+                      {member.full_name || member.email}
+                    </Text>
                   </View>
-                )}
-              />
+                ))}
+              </ScrollView>
             ) : (
-              <Text style={styles.noMembersText}>No members found</Text>
+              <Text className="text-center text-gray-500 text-sm">
+                No members found
+              </Text>
             )}
 
-            <TouchableOpacity style={styles.cancelButton} onPress={() => setMembersModalVisible(false)}>
-              <Text style={styles.cancelText}>Close</Text>
+            <TouchableOpacity
+              className="mt-5 bg-gray-300 py-3 w-full rounded-xl"
+              onPress={() => setMembersModalVisible(false)}
+            >
+              <Text className="text-gray-800 font-bold text-center text-lg">
+                Close
+              </Text>
             </TouchableOpacity>
           </View>
         </View>
       </Modal>
 
-
+      {/* 📌 Create Group Modal */}
+      <Modal visible={isModalVisible} transparent animationType="slide">
+        <View className="flex-1 justify-center items-center bg-black/50 backdrop-blur-md">
+          <View className="bg-white w-[85%] h-[24%] rounded-2xl p-6 shadow-xl">
+            <Text className="text-2xl font-bold text-gray-900 mb-4 text-center">
+              Create New Group
+            </Text>
+            <TextInput
+              className="w-full p-5 bg-gray-100 rounded-xl text-lg border border-gray-300"
+              placeholder="Enter group name"
+              value={newGroupName}
+              onChangeText={setNewGroupName}
+            />
+            <View className="flex-row justify-between mt-6">
+              <TouchableOpacity
+                className="bg-orange-500 py-3 w-[48%] rounded-xl shadow-lg"
+                onPress={handleCreateGroup}
+              >
+                <Text className="text-white font-bold text-center text-lg">
+                  Create
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                className="bg-gray-300 py-3 w-[48%] rounded-xl"
+                onPress={() => {
+                  setModalVisible(false);
+                  setNewGroupName("");
+                }}
+              >
+                <Text className="text-gray-800 font-bold text-center text-lg">
+                  Cancel
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+      {/* 📌 Invite User Modal */}
+      <Modal visible={isInviteModalVisible} transparent animationType="slide">
+        <View className="flex-1 justify-center items-center bg-black/50 backdrop-blur-md">
+          <View className="bg-white w-[85%] rounded-2xl p-6 shadow-xl">
+            <Text className="text-2xl font-bold text-gray-900 mb-4 text-center">
+              Invite User
+            </Text>
+            <TextInput
+              className="w-full p-3 bg-gray-100 rounded-xl text-lg border border-gray-300"
+              placeholder="Enter user email"
+              value={inviteEmail}
+              onChangeText={setInviteEmail}
+            />
+            <View className="flex-row justify-between mt-6">
+              <TouchableOpacity
+                className="bg-orange-500 py-3 w-[48%] rounded-xl shadow-lg"
+                onPress={handleInviteUser}
+              >
+                <Text className="text-white font-bold text-center text-lg">
+                  Invite
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                className="bg-gray-300 py-3 w-[48%] rounded-xl"
+                onPress={() => setInviteModalVisible(false)}
+              >
+                <Text className="text-gray-800 font-bold text-center text-lg">
+                  Cancel
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
-
-
-const styles = StyleSheet.create({
-  /** 🌟 Main Chat Container */
-  container: { flex: 1, backgroundColor: "#F5F5F5" },
-
-  /** 🌟 Header */
-  header: { 
-    flexDirection: "row", 
-    justifyContent: "space-between", 
-    alignItems: "center", 
-    paddingHorizontal: 20, 
-    paddingVertical: "20%", 
-    backgroundColor: "#fff", 
-    elevation: 3, 
-    shadowOpacity: 0.1, 
-    shadowRadius: 3 
-  },
-  title: { fontSize: 32, fontWeight: "bold", color: "#333" },
-
-  /** 🌟 Chat List */
-  chatName: { fontSize: 24, fontWeight: "bold", color: "#333"},
-
-  /** 🌟 Chat Messages */
-  chatContainer: { flex: 1, justifyContent: "space-between"},
-  messagesContainer: {
-    flex: 1,
-    paddingHorizontal: 15,
-  },
-
-  /** 🟡 Message Bubble */
-  messageContainer: {
-    maxWidth: "55%",
-    padding: 12,
-    borderRadius: 18,
-    marginBottom: 12,
-    shadowColor: "#000",
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2, // Android shadow
-  },
-
-  /** 🟡 My Messages */
-  myMessage: {
-    alignSelf: "flex-end",
-    backgroundColor: "#FFBB33",
-    borderTopRightRadius: 5, // Sharp corner for my messages
-  },
-
-  /** 🔵 Other User's Messages */
-  otherMessage: {
-    alignSelf: "flex-start",
-    backgroundColor: "#F0F0F0",
-    borderTopLeftRadius: 5, // Sharp corner for received messages
-  },
-
-  /** 🟡 Message Text */
-  messageText: {
-    fontSize: 16,
-    color: "#333",
-  },
-
-  /** 🔵 Sender Name (Only for received messages) */
-  messageSender: {
-    fontSize: 14,
-    color: "#555",
-    marginBottom: 3,
-  },
-
-  /** ⏳ Timestamp */
-  messageTimestamp: {
-    fontSize: 12,
-    color: "#777",
-    alignSelf: "flex-end",
-    marginTop: 4,
-  },
-
-  /** 🌟 Floating Action Button (FAB) */
-  fab: {
-    position: 'absolute',
-    bottom: "14%",
-    right: 20,
-    backgroundColor: '#ff8800',
-    width: 70, // Ensure button is a perfect circle
-    height: 70,
-    borderRadius: 35, // Makes it round
-    justifyContent: 'center',
-    alignItems: 'center',
-    elevation: 6, // Shadow for Android
-    shadowColor: '#000',
-    shadowOpacity: 0.3,
-    shadowRadius: 6,
-  },
-
-  sendMessageInput: { flex: 1, padding: 12, borderRadius: 10, backgroundColor: "#f5f5f5" },
-  sendButton: { padding: 12, backgroundColor: "#ff8800", borderRadius: 10, marginLeft: 8 },
-  sendMessageContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    padding: 12,
-    marginBottom: "26%",
-    backgroundColor: "#fff",
-    borderTopWidth: 1,
-    borderColor: "#ddd",
-  },
-  
-  /** 🌟 Modal for Group Creation */
-  modalContainer: { 
-    flex: 1, 
-    justifyContent: "center", 
-    alignItems: "center", 
-    backgroundColor: "rgba(0,0,0,0.5)", 
-  },
-  
-  modalContent: {
-    width: "85%",
-    backgroundColor: "#FFF",
-    padding: 25,
-    borderRadius: 20,
-    alignItems: "center",
-    elevation: 5,
-    shadowColor: "#000",
-    shadowOpacity: 0.2,
-    shadowRadius: 5,
-  },
-  modalTitle: { 
-    fontSize: 22, 
-    fontWeight: "bold", 
-    marginBottom: 15, 
-    color: "#333" 
-  },
-  modalInput: {
-    width: "100%",
-    padding: 12,
-    backgroundColor: "#f0f0f0",
-    borderRadius: 12,
-    fontSize: 16,
-    marginBottom: 15,
-  },
-
-  /** 🌟 Buttons side by side */
-  modalButtonContainer: { 
-    flexDirection: "row", 
-    justifyContent: "space-between", 
-    width: "100%", 
-    marginTop: 10
-  },
-  createButton: { 
-    backgroundColor: "#ff8800", 
-    paddingVertical: 12, 
-    borderRadius: 10, 
-    alignItems: "center", 
-    marginRight: 10,
-    width: "48%",
-  },
-  createText: { 
-    fontWeight: "bold", 
-    color: "#FFF", 
-    fontSize: 16 
-  },
-  cancelButton: { 
-    backgroundColor: "#ccc", 
-    paddingVertical: 12, 
-    borderRadius: 10, 
-    width: "48%",
-    alignItems: "center",
-  },
-  cancelText: { 
-    fontWeight: "bold", 
-    color: "#333", 
-    fontSize: 16 
-  },
-
-  input: {
-    flex: 1,
-    padding: 12,
-    backgroundColor: "#FFF",
-    borderRadius: 10,
-    fontSize: 16,
-    borderWidth: 1,
-    borderColor: "#ddd",
-    marginRight: 10,
-    color: "#333",
-  },
-
-  /** 📌 Invite Container */
-  inviteContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 20,
-    marginTop: 10,
-  },
-
-  /** 📌 Invite Button */
-  inviteButton: {
-    backgroundColor: "#ffbb33",
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 10,
-    justifyContent: "center",
-    alignItems: "center",
-    elevation: 3, // Android shadow
-    shadowColor: "#000",
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-  },
-
-  /** 📌 Invite Button Text */
-  inviteText: {
-    fontSize: 16,
-    fontWeight: "bold",
-    color: "#FFF",
-  },
-  
-  backButton: {
-    marginRight: 10,
-    marginLeft: 10,
-  },
-
-  groupMembersButton: {
-    padding: 10,
-    marginLeft: 10,
-  },
-  
-  /** 🟡 Member List Item */
-  memberItem: {
-    padding: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: "#ddd",
-  },
-  
-  /** 🟢 Member Name */
-  memberText: {
-    fontSize: 16,
-    fontWeight: "bold",
-    color: "#333",
-  },
-  
-  /** 🔴 No Members Found */
-  noMembersText: {
-    fontSize: 14,
-    fontStyle: "italic",
-    color: "#666",
-    textAlign: "center",
-    marginVertical: 10,
-  },
-
-  chatItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    padding: 15,
-    backgroundColor: "#FFD700", 
-    borderRadius: 12,
-    marginHorizontal: 15,
-    marginTop: 20,
-    shadowColor: "#000",
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3, // Android shadow
-    height: 100,
-  },
-
-  chatInfo: {
-    flex: 1, // Takes up available space
-  },
-
-  lastMessage: {
-    fontSize: 14,
-    color: "#666",
-    marginTop: 2,
-  },
-  timestampContainer: {
-    alignItems: "flex-end",
-  },
-  timestamp: {
-    fontSize: 12,
-    color: "#999",
-  },
-});

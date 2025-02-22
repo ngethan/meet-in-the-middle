@@ -3,7 +3,6 @@ import {
   View,
   Text,
   TouchableOpacity,
-  StyleSheet,
   Dimensions,
   Animated,
 } from "react-native";
@@ -18,133 +17,90 @@ interface NavigationDrawerProps {
   isOpen: boolean;
 }
 
-export default function NavigationDrawer({ onClose, isOpen }: NavigationDrawerProps) {
+export default function NavigationDrawer({
+  onClose,
+  isOpen,
+}: NavigationDrawerProps) {
   const router = useRouter();
-  const slideAnim = useRef(new Animated.Value(-width * 0.7)).current; // Start offscreen
-  const {user, signOut} = useAuth();
+  const slideAnim = useRef(new Animated.Value(-width * 0.7)).current;
+  const { user, signOut } = useAuth();
 
   useEffect(() => {
     Animated.timing(slideAnim, {
       toValue: isOpen ? 0 : -width * 0.7,
       duration: 300,
-      easing: (t) => (--t) * t * t + 1, // Smooth ease-out
+      easing: (t) => --t * t * t + 1,
       useNativeDriver: true,
     }).start();
   }, [isOpen]);
 
   return (
     <>
-      {/* Overlay with blur effect */}
+      {/* 📌 Overlay with Blur Effect */}
       {isOpen && (
-        <TouchableOpacity style={styles.overlay} onPress={onClose} activeOpacity={1} />
+        <TouchableOpacity
+          className="absolute top-0 left-0 w-full h-full bg-black/40 backdrop-blur-sm z-10"
+          onPress={onClose}
+          activeOpacity={1}
+        />
       )}
 
-      {/* Drawer */}
-      <Animated.View style={[styles.drawer, { transform: [{ translateX: slideAnim }] }]}>
-        {/* Close Button */}
-        <TouchableOpacity style={styles.closeButton} onPress={onClose}>
+      {/* 📌 Sliding Drawer */}
+      <Animated.View
+        style={{ transform: [{ translateX: slideAnim }] }}
+        className="absolute left-0 top-0 w-[70%] h-full bg-[#1D3D47] z-20 shadow-lg rounded-tr-3xl rounded-br-3xl px-6 py-16"
+      >
+        {/* 🔻 Close Button */}
+        <TouchableOpacity
+          className="absolute top-6 right-6 p-2"
+          onPress={onClose}
+        >
           <FontAwesome name="arrow-left" size={24} color="#FFF" />
         </TouchableOpacity>
 
-        {/* User Info */}
-        <View style={styles.profileContainer}>
-          <FontAwesome name="user-circle" size={50} color="white" />
-          <Text style={styles.username}>{user?.user_metadata.email || "User"}</Text>
+        {/* 🔻 User Info */}
+        <View className="items-center mb-8">
+          <FontAwesome name="user-circle" size={60} color="white" />
+          <Text className="text-xl text-white font-semibold mt-3">
+            {user?.user_metadata.email || "User"}
+          </Text>
         </View>
 
-        {/* Navigation Items */}
+        {/* 🔻 Navigation Items */}
         <TouchableOpacity
-          style={styles.navItem}
+          className="flex-row items-center py-5 border-b border-white/20"
           onPress={() => {
             router.push("/profile");
             onClose();
           }}
         >
           <FontAwesome name="user" size={22} color="white" />
-          <Text style={styles.navText}>Profile</Text>
+          <Text className="text-lg text-white font-medium ml-4">Profile</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={styles.navItem}
+          className="flex-row items-center py-5 border-b border-white/20"
           onPress={() => {
             router.push("/settings");
             onClose();
           }}
         >
           <FontAwesome name="cog" size={22} color="white" />
-          <Text style={styles.navText}>Settings</Text>
+          <Text className="text-lg text-white font-medium ml-4">Settings</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={styles.navItem}
+          className="flex-row items-center py-5"
           onPress={() => {
             signOut();
             router.push("/auth");
             onClose();
-          }
-          }
+          }}
         >
           <FontAwesome name="sign-out" size={22} color="white" />
-          <Text style={styles.navText}>Logout</Text>
+          <Text className="text-lg text-white font-medium ml-4">Logout</Text>
         </TouchableOpacity>
       </Animated.View>
     </>
   );
 }
-
-const styles = StyleSheet.create({
-  overlay: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    width: width,
-    height: height,
-    backgroundColor: "rgba(0, 0, 0, 0.4)", // Dark semi-transparent overlay
-    zIndex: 1,
-  },
-  drawer: {
-    width: width * 0.7, // 70% screen width
-    height: height,
-    backgroundColor: "#1D3D47", // Dark blue-green
-    paddingVertical: "20%",
-    paddingHorizontal: 25,
-    position: "absolute",
-    left: 0,
-    top: 0,
-    zIndex: 2,
-    borderTopRightRadius: 30,
-    borderBottomRightRadius: 30,
-    shadowColor: "#000",
-    shadowOpacity: 0.3,
-    shadowRadius: 10,
-    elevation: 40,
-  },
-  closeButton: {
-    position: "absolute",
-    top: 20,
-    right: 20,
-  },
-  profileContainer: {
-    alignItems: "center",
-    marginBottom: 30,
-  },
-  username: {
-    fontSize: 20,
-    color: "white",
-    marginTop: 10,
-  },
-  navItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: 18,
-    borderBottomWidth: 1,
-    borderBottomColor: "rgba(255, 255, 255, 0.2)", // Subtle divider
-  },
-  navText: {
-    fontSize: 18,
-    marginLeft: 15,
-    color: "white",
-    fontWeight: "500",
-  },
-});
-
