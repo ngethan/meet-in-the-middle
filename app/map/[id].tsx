@@ -20,7 +20,7 @@ import {
   PanGestureHandler,
 } from "react-native-gesture-handler"; // !!! need to replace PanGestureHandler with an alternative !!!
 
-const GOOGLE_MAPS_API_KEY = "AIzaSyA4uljcRg1KsBf1YVLxdJPvLU8iMj71q7Q"; // Replace with your API key
+const GOOGLE_MAPS_API_KEY = process.env.EXPO_PUBLIC_API_KEY;
 
 export default function MapScreen() {
   const { id } = useLocalSearchParams();

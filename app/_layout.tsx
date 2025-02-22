@@ -1,16 +1,10 @@
 import FontAwesome from "@expo/vector-icons/FontAwesome";
-import {
-  DarkTheme,
-  DefaultTheme,
-  ThemeProvider,
-} from "@react-navigation/native";
 import { useFonts } from "expo-font";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
-import { useEffect } from "react";
+import React, { useEffect } from "react";
 import "react-native-reanimated";
 import { AuthProvider } from "@/context/AuthProvider";
-import { useColorScheme } from "@/components/useColorScheme";
 
 export {
   // Catch any errors thrown by the Layout component.
@@ -49,28 +43,29 @@ export default function RootLayout() {
   // return <RootLayoutNav />;
   return (
     <AuthProvider>
-
-    <Stack screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="index" options={{ title: 'Welcome', headerShown: false }} />
-      <Stack.Screen name="home" options={{ title: 'Home' }} />
-      <Stack.Screen name="auth" options={{ title: 'Auth' }} />
-      <Stack.Screen name="place/[id]" options={{ title: 'Place Details' }} />
-      <Stack.Screen name="map/[id]" options={{ title: 'Map' }} />
-    </Stack>
+      <Stack screenOptions={{ headerShown: false }}>
+        <Stack.Screen
+          name="index"
+          options={{ title: "Welcome", headerShown: false }}
+        />
+        <Stack.Screen name="home" options={{ title: "Home" }} />
+        <Stack.Screen name="auth" options={{ title: "Auth" }} />
+        <Stack.Screen name="place/[id]" options={{ title: "Place Details" }} />
+        <Stack.Screen name="map/[id]" options={{ title: "Map" }} />
+      </Stack>
     </AuthProvider>
   );
 }
 
+// function RootLayoutNav() {
+//   const colorScheme = useColorScheme();
 
-function RootLayoutNav() {
-  const colorScheme = useColorScheme();
-
-  return (
-    <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
-      <Stack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="modal" options={{ presentation: "modal" }} />
-      </Stack>
-    </ThemeProvider>
-  );
-}
+//   return (
+//     <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
+//       <Stack>
+//         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+//         <Stack.Screen name="modal" options={{ presentation: "modal" }} />
+//       </Stack>
+//     </ThemeProvider>
+//   );
+// }
