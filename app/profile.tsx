@@ -22,7 +22,6 @@ export default function Account({ session }: { session: Session }) {
   async function getProfile() {
     try {
       setLoading(true);
-      console.log(user.id);
 
       if (!user) {
         setErrorMsg("User not found.");
@@ -36,15 +35,9 @@ export default function Account({ session }: { session: Session }) {
         .eq("id", user.id)
         .single();
 
-      console.log(user.id);
       if (error) throw error;
-      console.log("Stop here");
-
       setEmail(user.email);
-      console.log("Stop here");
-
       setFullName(data?.full_name || "Not set");
-      console.log(email, fullName);
       // ✅ Fetch location
       let { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== "granted") {

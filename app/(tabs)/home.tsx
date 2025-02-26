@@ -21,8 +21,10 @@ const RADIUS = 50000;
 
 export default function HomeScreen() {
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [location, setLocation] = useState(null);
-  const [errorMsg, setErrorMsg] = useState(null);
+  const [location, setLocation] = useState<Location.LocationObject | null>(
+    null,
+  );
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [address, setAddress] = useState(null);
   const [places, setPlaces] = useState([]);
   const [_, setLoading] = useState(true);

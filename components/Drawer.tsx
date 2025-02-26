@@ -100,6 +100,18 @@ export default function NavigationDrawer({
           <FontAwesome name="sign-out" size={22} color="white" />
           <Text className="text-lg text-white font-medium ml-4">Logout</Text>
         </TouchableOpacity>
+
+        <TouchableOpacity
+          className="flex-row items-center py-5"
+          onPress={() => {
+            signOut();
+            router.push("/about");
+            onClose();
+          }}
+        >
+          <FontAwesome name="info" size={22} color="white" />
+          <Text className="text-lg text-white font-medium ml-4">About</Text>
+        </TouchableOpacity>
       </Animated.View>
     </>
   );

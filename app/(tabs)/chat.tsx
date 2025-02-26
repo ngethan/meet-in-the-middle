@@ -17,12 +17,13 @@ import { useAuth } from "@/context/AuthProvider";
 import { FontAwesome } from "@expo/vector-icons";
 import { randomUUID } from "crypto"; // Native Node.js 16+ alternative
 import moment from "moment";
+import { router } from "expo-router";
 
 const { width, height } = Dimensions.get("window");
 
 export default function ChatScreen() {
   const { user } = useAuth(); // Get logged-in user
-  const [chats, setChats] = useState([]); // Group chats
+  const [chats, setChats] = useState<any[]>([]); // Group chats
   const [messages, setMessages] = useState([]); // Messages in selected chat
   const [selectedChat, setSelectedChat] = useState(null); // Active chat
   const [newGroupName, setNewGroupName] = useState(""); // New group name
@@ -93,8 +94,6 @@ export default function ChatScreen() {
       return v.toString(16);
     });
 
-  console.log(nonCryptoUUID());
-
   /** 📌 Fetch group members */
   const fetchGroupMembers = async () => {
     if (!selectedChat) return;
@@ -105,7 +104,6 @@ export default function ChatScreen() {
       .eq("chat_id", selectedChat.id)
       .order("joined_at", { ascending: true });
 
-    console.log(data);
     if (!error) {
       setGroupMembers(data.map((member) => member.users));
       setMembersModalVisible(true);
@@ -121,6 +119,12 @@ export default function ChatScreen() {
         break;
       case "members":
         fetchGroupMembers();
+        break;
+      case "trips":
+        router.push({
+          pathname: "/trips",
+          params: { chatId: selectedChat.id, chatName: selectedChat.name },
+        });
         break;
       default:
         break;
@@ -200,6 +204,7 @@ export default function ChatScreen() {
       // Extract chat IDs
       const chatIds = userChats.map((item) => item.chat_id);
 
+      console.log(user.id, "   ", chatIds);
       if (chatIds.length === 0) {
         setChats([]); // If user isn't in any chats, reset state
         return;
@@ -312,25 +317,21 @@ export default function ChatScreen() {
       return Alert.alert("Error", "Group name cannot be empty");
 
     const newGroupId = nonCryptoUUID();
-    const { error } = await supabase
-      .from("chats")
-      .insert([
-        {
-          id: newGroupId,
-          name: newGroupName,
-          created_at: new Date().toISOString(),
-        },
-      ]);
+    const { error } = await supabase.from("chats").insert([
+      {
+        id: newGroupId,
+        name: newGroupName,
+        created_at: new Date().toISOString(),
+      },
+    ]);
 
-    const { error: memberError } = await supabase
-      .from("group_members")
-      .insert([
-        {
-          chat_id: newGroupId,
-          user_id: user.id,
-          joined_at: new Date().toISOString(),
-        },
-      ]);
+    const { error: memberError } = await supabase.from("group_members").insert([
+      {
+        chat_id: newGroupId,
+        user_id: user.id,
+        joined_at: new Date().toISOString(),
+      },
+    ]);
 
     if (!error && !memberError) {
       setNewGroupName("");
@@ -370,15 +371,13 @@ export default function ChatScreen() {
     }
 
     // Add user to group
-    const { error } = await supabase
-      .from("group_members")
-      .insert([
-        {
-          chat_id: selectedChat.id,
-          user_id: userData.id,
-          joined_at: new Date().toISOString(),
-        },
-      ]);
+    const { error } = await supabase.from("group_members").insert([
+      {
+        chat_id: selectedChat.id,
+        user_id: userData.id,
+        joined_at: new Date().toISOString(),
+      },
+    ]);
 
     if (!error) {
       setInviteEmail("");
@@ -506,7 +505,7 @@ export default function ChatScreen() {
           activeOpacity={0.7}
         >
           <FontAwesome name="user-plus" size={22} color="black" />
-          <Text className="text-base text-gray-800">Invite User</Text>
+          <Text className="text-base text-gray-800 px-3">Invite User</Text>
         </TouchableOpacity>
         <TouchableOpacity
           onPress={() => handleFabOption("members")}
@@ -514,7 +513,15 @@ export default function ChatScreen() {
           activeOpacity={0.7}
         >
           <FontAwesome name="users" size={22} color="black" />
-          <Text className="text-base text-gray-800">See Members</Text>
+          <Text className="text-base text-gray-800 px-3">See Members</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          onPress={() => handleFabOption("trips")}
+          className="flex-row items-center px-3 p-2 rounded-lg bg-gray-50 active:bg-gray-100"
+          activeOpacity={0.7}
+        >
+          <FontAwesome name="map" size={22} color="black" />
+          <Text className="text-base text-gray-800 px-3">Trips</Text>
         </TouchableOpacity>
       </Animated.View>
 

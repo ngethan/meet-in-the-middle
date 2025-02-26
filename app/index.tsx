@@ -37,7 +37,7 @@ export default function WelcomeScreen() {
   });
 
   return (
-    <Link href="/auth" asChild>
+    <Link href="/tutorial" asChild>
       <TouchableOpacity className="flex-1" activeOpacity={0.8}>
         {/* Full-Screen Gradient Background */}
         <LinearGradient

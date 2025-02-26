@@ -19,7 +19,6 @@ import * as Location from "expo-location";
 const { width, height } = Dimensions.get("window"); // Get screen dimensions
 
 const GOOGLE_MAPS_API_KEY = process.env.EXPO_PUBLIC_API_KEY;
-const GOOGLE_MAPS_API_KEY = process.env.EXPO_PUBLIC_API_KEY;
 const RADIUS = 50000; // 50 km
 
 export default function HomeScreen() {

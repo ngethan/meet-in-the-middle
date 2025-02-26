@@ -21,6 +21,7 @@ import {
 } from "react-native-gesture-handler"; // !!! need to replace PanGestureHandler with an alternative !!!
 
 const GOOGLE_MAPS_API_KEY = process.env.EXPO_PUBLIC_API_KEY;
+const polyline = require("@mapbox/polyline");
 
 export default function MapScreen() {
   const { id } = useLocalSearchParams();
@@ -155,9 +156,14 @@ export default function MapScreen() {
   };
 
   // Draw route line on the map
-  const decodePolyline = (encoded) => {
-    let points = require("polyline").decode(encoded);
-    return points.map(([lat, lng]) => ({ latitude: lat, longitude: lng }));
+  const decodePolyline = (
+    encoded: string,
+  ): { latitude: number; longitude: number }[] => {
+    let points: [number, number][] = polyline.decode(encoded);
+    return points.map(([lat, lng]: [number, number]) => ({
+      latitude: lat,
+      longitude: lng,
+    }));
   };
 
   // Get details about the route
@@ -269,8 +275,8 @@ export default function MapScreen() {
       <MapView
         style={[styles.map, selectedMode === "transit" && styles.mapTransit]}
         initialRegion={{
-          latitude: currentLocation?.latitude || 0,
-          longitude: currentLocation?.longitude || 0,
+          latitude: currentLocation?.latitude || null, // Default WashU Location
+          longitude: currentLocation?.longitude || null,
           latitudeDelta: 0.1,
           longitudeDelta: 0.1,
         }}

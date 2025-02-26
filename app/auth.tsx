@@ -16,6 +16,7 @@ import { supabase } from "../lib/supabase";
 import * as AppleAuthentication from "expo-apple-authentication";
 import { LinearGradient } from "expo-linear-gradient";
 import { verifyInstallation } from "nativewind";
+import { useAuth } from "../context/AuthProvider";
 
 AppState.addEventListener("change", (state) => {
   if (state === "active") {
@@ -38,6 +39,7 @@ export default function AuthScreen() {
       const { data } = await supabase.auth.getUser();
       if (data?.user) {
         const { user } = data;
+        console.log(user);
         if (user.email_confirmed_at) {
           router.replace("/(tabs)/home");
         }
@@ -67,10 +69,15 @@ export default function AuthScreen() {
   async function signUpWithEmail() {
     setLoading(true);
 
+    console.log("Signing up");
+
     // ✅ Step 1: Sign up user
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
+      options: {
+        data: { full_name: fullName },
+      },
     });
 
     if (error) {
@@ -79,7 +86,7 @@ export default function AuthScreen() {
       return;
     }
 
-    Alert.alert("Verify Email", "Check your inbox to verify your email!");
+    Alert.alert("Please check your inbox for email verification!");
 
     // ✅ Step 2: Wait for user to confirm email
     const checkEmailVerified = async () => {
@@ -115,6 +122,8 @@ export default function AuthScreen() {
     };
 
     checkEmailVerified();
+
+    // router.push("/(tabs)/home");
   }
 
   async function resetPassword() {
@@ -144,8 +153,6 @@ export default function AuthScreen() {
           height: "100%",
         }}
       />
-
-      {/* Auth Container (Perfectly Centered) */}
       <View className="flex-1 justify-center items-center px-6">
         <View className="w-full max-w-md bg-white/95 rounded-2xl p-6 shadow-lg">
           <Text className="text-3xl font-bold text-gray-800 text-center mb-5">
