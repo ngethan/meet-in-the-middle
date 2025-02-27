@@ -1,31 +1,29 @@
-import React, { useEffect, useRef } from 'react';
-import { View, Animated, StyleSheet, Easing, Image, TouchableOpacity } from 'react-native';
-import { Link } from 'expo-router';
+import React, { useEffect, useRef } from "react";
+import { View, Animated, TouchableOpacity, Text } from "react-native";
+import { Link } from "expo-router";
+import { LinearGradient } from "expo-linear-gradient";
 
 export default function WelcomeScreen() {
+  // Animations
   const floatAnim = useRef(new Animated.Value(0)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    // Floating Animation (Up and Down)
     Animated.loop(
       Animated.sequence([
         Animated.timing(floatAnim, {
-          toValue: 1, // Move up
+          toValue: 1,
           duration: 2500,
-          easing: Easing.inOut(Easing.ease),
           useNativeDriver: true,
         }),
         Animated.timing(floatAnim, {
-          toValue: 0, // Move down
+          toValue: 0,
           duration: 2500,
-          easing: Easing.inOut(Easing.ease),
           useNativeDriver: true,
         }),
-      ])
+      ]),
     ).start();
 
-    // Fade-in Animation
     Animated.timing(fadeAnim, {
       toValue: 1,
       duration: 2000,
@@ -33,31 +31,50 @@ export default function WelcomeScreen() {
     }).start();
   }, []);
 
-  // Interpolating floatAnim to move up and down
   const floatingY = floatAnim.interpolate({
     inputRange: [0, 1],
-    outputRange: [10, -10], // Moves smoothly up & down
+    outputRange: [10, -10], // Smooth floating motion
   });
 
   return (
-    <Link href="/auth" asChild>
-      <TouchableOpacity style={styles.container} activeOpacity={0.8}>
-        <View style={styles.topContainer}>
-          <Image source={require('../assets/logo.png')} style={styles.logo} />
-          <Animated.Text style={[styles.welcomeText, { opacity: fadeAnim }]}>
-            Oddyseez
-          </Animated.Text>
-          <Animated.Text style={[styles.sloganText, { opacity: fadeAnim }]}>
-              Where Every Trip Start Together
-          </Animated.Text>
-        </View>
+    <Link href="/tutorial" asChild>
+      <TouchableOpacity className="flex-1" activeOpacity={0.8}>
+        {/* Full-Screen Gradient Background */}
+        <LinearGradient
+          colors={["#FFB95E", "#ED8F03"]}
+          style={{
+            position: "absolute",
+            inset: 0,
+            width: "100%",
+            height: "100%",
+          }}
+        />
 
-        <View style={styles.bottomContainer}>
+        {/* Centered Content */}
+        <View className="flex-1 justify-center items-center px-6">
+          {/* Animated Title & Slogan */}
+          <View className="items-center">
+            <Animated.Text
+              style={{ opacity: fadeAnim }}
+              className="text-white text-7xl font-extrabold tracking-wide"
+            >
+              Oddyseez
+            </Animated.Text>
+            <Animated.Text
+              style={{ opacity: fadeAnim }}
+              className="text-white text-xl font-semibold mt-3 text-center"
+            >
+              Where Every Trip Starts Together
+            </Animated.Text>
+          </View>
+
+          {/* Floating Call-to-Action */}
           <Animated.Text
-            style={[
-              styles.continueText,
-              { opacity: fadeAnim, transform: [{ translateY: floatingY }] },
-            ]}
+            style={{
+              opacity: fadeAnim,
+              transform: [{ translateY: floatingY }],
+            }}
+            className="absolute bottom-40 text-white text-lg font-medium opacity-90 animate-pulse"
           >
             Tap anywhere to continue
           </Animated.Text>
@@ -66,48 +83,3 @@ export default function WelcomeScreen() {
     </Link>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#ffd69d',
-  },
-  topContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  bottomContainer: {
-    flex: 0.5,
-    justifyContent: 'flex-end',
-    alignItems: 'center',
-    marginBottom: 130,
-  },
-  logo: {
-    width: 200,
-    height: 200,
-    marginBottom: 40,
-    resizeMode: 'contain',
-  },
-  welcomeText: {
-    fontSize: 42,
-    fontWeight: 'bold',
-    color: '#1D3D47',
-    textAlign: 'center',
-    marginBottom: 40, 
-  },
-  sloganText: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#1D3D47',
-    textAlign: 'center',
-  },
-  continueText: {
-    fontSize: 18,
-    fontWeight: '500',
-    color: '#1D3D47',
-    opacity: 0.8,
-  },
-});

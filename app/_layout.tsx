@@ -1,28 +1,19 @@
+import "../styles/global.css";
+
 import FontAwesome from "@expo/vector-icons/FontAwesome";
-import {
-  DarkTheme,
-  DefaultTheme,
-  ThemeProvider,
-} from "@react-navigation/native";
 import { useFonts } from "expo-font";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
-import { useEffect } from "react";
+import React, { useEffect } from "react";
 import "react-native-reanimated";
+import { AuthProvider } from "@/context/AuthProvider";
 
-import { useColorScheme } from "@/components/useColorScheme";
-
-export {
-  // Catch any errors thrown by the Layout component.
-  ErrorBoundary,
-} from "expo-router";
+export { ErrorBoundary } from "expo-router";
 
 export const unstable_settings = {
-  // Ensure that reloading on `/modal` keeps a back button present.
-  initialRouteName: "(tabs)",
+  initialRouteName: "",
 };
 
-// Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
@@ -31,7 +22,6 @@ export default function RootLayout() {
     ...FontAwesome.font,
   });
 
-  // Expo Router uses Error Boundaries to catch errors in the navigation tree.
   useEffect(() => {
     if (error) throw error;
   }, [error]);
@@ -46,28 +36,39 @@ export default function RootLayout() {
     return null;
   }
 
-  // return <RootLayoutNav />;
   return (
-    <Stack screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="mapp" options={{ title: 'Map' }} />
-      <Stack.Screen name="index" options={{ title: 'Welcome', headerShown: false }} />
-      <Stack.Screen name="home" options={{ title: 'Home' }} />
-      <Stack.Screen name="auth" options={{ title: 'Auth' }} />
-      <Stack.Screen name="place/[id]" options={{ title: 'Place Details' }} />
-    </Stack>
-  );
-}
-
-
-function RootLayoutNav() {
-  const colorScheme = useColorScheme();
-
-  return (
-    <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
-      <Stack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="modal" options={{ presentation: "modal" }} />
+    <AuthProvider>
+      <Stack screenOptions={{ headerShown: false }}>
+        <Stack.Screen
+          name="index"
+          options={{ title: "Welcome", headerShown: false }}
+        />
+        <Stack.Screen name="tutorial" options={{ title: "Tutorial" }} />
+        <Stack.Screen name="home" options={{ title: "Home" }} />
+        <Stack.Screen name="auth" options={{ title: "Auth" }} />
+        <Stack.Screen name="(tabs)" options={{ title: "Tabs" }} />
+        <Stack.Screen name="place/[id]" options={{ title: "Place Details" }} />
+        <Stack.Screen name="trips" options={{ title: "Trips" }} />
+        <Stack.Screen name="trip/[id]" options={{ title: "Trip Details" }} />
+        <Stack.Screen name="profile" options={{ title: "Profile" }} />
+        <Stack.Screen name="settings" options={{ title: "Settings" }} />
+        <Stack.Screen name="about" options={{ title: "About" }} />
+        <Stack.Screen name="start_trip" options={{ title: "Start Trip" }} />
+        <Stack.Screen name="map" options={{ title: "MapScreen" }} />
       </Stack>
-    </ThemeProvider>
+    </AuthProvider>
   );
 }
+
+// function RootLayoutNav() {
+//   const colorScheme = useColorScheme();
+
+//   return (
+//     <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
+//       <Stack>
+//         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+//         <Stack.Screen name="modal" options={{ presentation: "modal" }} />
+//       </Stack>
+//     </ThemeProvider>
+//   );
+// }

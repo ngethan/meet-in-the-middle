@@ -1,155 +1,258 @@
-import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image } from 'react-native';
-import { useRouter, Link} from 'expo-router';
+import React, { useState, useEffect } from "react";
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  SafeAreaView,
+  KeyboardAvoidingView,
+  Platform,
+  AppState,
+  Alert,
+  ActivityIndicator,
+} from "react-native";
+import { useRouter } from "expo-router";
+import { supabase } from "../lib/supabase";
+import * as AppleAuthentication from "expo-apple-authentication";
+import { LinearGradient } from "expo-linear-gradient";
+import { verifyInstallation } from "nativewind";
+import { useAuth } from "../context/AuthProvider";
+
+AppState.addEventListener("change", (state) => {
+  if (state === "active") {
+    supabase.auth.startAutoRefresh();
+  } else {
+    supabase.auth.stopAutoRefresh();
+  }
+});
 
 export default function AuthScreen() {
-  const [isSignUp, setIsSignUp] = useState(false); // Toggle between Sign In & Sign Up
+  const [isSignUp, setIsSignUp] = useState(false);
+  const [fullName, setFullName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
   const router = useRouter();
 
+  useEffect(() => {
+    const checkUser = async () => {
+      const { data } = await supabase.auth.getUser();
+      if (data?.user) {
+        const { user } = data;
+        console.log(user);
+        if (user.email_confirmed_at) {
+          router.replace("/(tabs)/home");
+        }
+      }
+    };
+    checkUser();
+  }, []);
+
+  async function signInWithEmail() {
+    setLoading(true);
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+    if (error) {
+      Alert.alert("Error", error.message);
+    } else {
+      if (data.user?.email_confirmed_at) {
+        router.replace("/(tabs)/home");
+      } else {
+        Alert.alert("Check Email", "Verify your email before signing in.");
+      }
+    }
+    setLoading(false);
+  }
+
+  async function signUpWithEmail() {
+    setLoading(true);
+
+    console.log("Signing up");
+
+    // ✅ Step 1: Sign up user
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: { full_name: fullName },
+      },
+    });
+
+    if (error) {
+      Alert.alert("Error", error.message);
+      setLoading(false);
+      return;
+    }
+
+    Alert.alert("Please check your inbox for email verification!");
+
+    // ✅ Step 2: Wait for user to confirm email
+    const checkEmailVerified = async () => {
+      let attempts = 0;
+      const interval = setInterval(async () => {
+        if (attempts >= 10) {
+          clearInterval(interval);
+          setLoading(false);
+          return;
+        }
+
+        const { data: userData, error: userError } =
+          await supabase.auth.getUser();
+        if (userError) {
+          clearInterval(interval);
+          setLoading(false);
+          return;
+        }
+
+        if (userData?.user?.email_confirmed_at) {
+          clearInterval(interval);
+
+          // ✅ Step 3: Insert user into DB after verification
+          await supabase
+            .from("users")
+            .insert([{ id: userData.user.id, email, full_name: fullName }]);
+
+          setLoading(false);
+          router.replace("/(tabs)/home");
+        }
+        attempts++;
+      }, 500000);
+    };
+
+    checkEmailVerified();
+
+    // router.push("/(tabs)/home");
+  }
+
+  async function resetPassword() {
+    if (!email)
+      return Alert.alert("Error", "Enter your email to reset password");
+    setLoading(true);
+    const { error } = await supabase.auth.resetPasswordForEmail(email);
+    if (error) Alert.alert("Error", error.message);
+    else Alert.alert("Success", "Password reset email sent!");
+    setLoading(false);
+  }
+
+  verifyInstallation();
+
   return (
-    <View style={styles.container}>
-      {/* Authentication Box */}
-      <View style={styles.authBox}>
-        <Text style={styles.authTitle}>{isSignUp ? 'Create An Account' : 'Sign into your account'}</Text>
+    <KeyboardAvoidingView
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      className="flex-1"
+    >
+      {/* Background Gradient */}
+      <LinearGradient
+        colors={["#e0c3fc", "#8ec5fc"]}
+        style={{
+          position: "absolute",
+          inset: 0,
+          width: "100%",
+          height: "100%",
+        }}
+      />
+      <View className="flex-1 justify-center items-center px-6">
+        <View className="w-full max-w-md bg-white/95 rounded-2xl p-6 shadow-lg">
+          <Text className="text-3xl font-bold text-gray-800 text-center mb-5">
+            {isSignUp ? "Create Account" : "Sign In"}
+          </Text>
 
-        {/* Email Input */}
-        <View style={styles.inputContainer}>
-          <TextInput placeholder="Email" placeholderTextColor="#666" style={styles.input} />
-        </View>
-
-        {/* Password Input */}
-        <View style={styles.inputContainer}>
-          <TextInput placeholder="Password" placeholderTextColor="#666" secureTextEntry style={styles.input} />
-        </View>
-
-        {/* Password Confirmation (Only for Sign Up) */}
-        {isSignUp && (
-          <View style={styles.inputContainer}>
+          {isSignUp && (
             <TextInput
-              placeholder="Confirm Password"
+              placeholder="Full Name"
               placeholderTextColor="#666"
-              secureTextEntry
-              style={styles.input}
+              value={fullName}
+              autoCapitalize="words"
+              onChangeText={setFullName}
+              className="h-12 border border-gray-300 rounded-lg px-4 bg-white text-base text-gray-800 mb-4"
+            />
+          )}
+
+          <TextInput
+            placeholder="Email"
+            placeholderTextColor="#666"
+            value={email}
+            autoCapitalize="none"
+            keyboardType="email-address"
+            onChangeText={setEmail}
+            className="h-12 border border-gray-300 rounded-lg px-4 bg-white text-base text-gray-800 mb-4"
+          />
+
+          <TextInput
+            placeholder="Password"
+            placeholderTextColor="#666"
+            secureTextEntry
+            value={password}
+            autoCapitalize="none"
+            onChangeText={setPassword}
+            className="h-12 border border-gray-300 rounded-lg px-4 bg-white text-base text-gray-800 mb-4"
+          />
+
+          <TouchableOpacity
+            disabled={loading}
+            onPress={isSignUp ? signUpWithEmail : signInWithEmail}
+            className="w-full p-3 rounded-lg mt-2 bg-indigo-600 shadow-lg items-center"
+          >
+            {loading ? (
+              <ActivityIndicator color="#FFF" />
+            ) : (
+              <Text className="text-lg font-bold text-white">
+                {isSignUp ? "Sign Up" : "Sign In"}
+              </Text>
+            )}
+          </TouchableOpacity>
+
+          {/* Apple Authentication */}
+          <View className="w-full mt-5 items-center">
+            <AppleAuthentication.AppleAuthenticationButton
+              buttonType={
+                AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN
+              }
+              buttonStyle={
+                AppleAuthentication.AppleAuthenticationButtonStyle.BLACK
+              }
+              cornerRadius={5}
+              style={{ width: "100%", height: 44 }}
+              onPress={async () => {
+                try {
+                  const credential = await AppleAuthentication.signInAsync({
+                    requestedScopes: [
+                      AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+                      AppleAuthentication.AppleAuthenticationScope.EMAIL,
+                    ],
+                  });
+                  Alert.alert("Success", "You are now logged in with Apple!");
+                } catch (e: any) {
+                  Alert.alert("Error", e.message || "Something went wrong.");
+                }
+              }}
             />
           </View>
-        )}
 
-        {/* Sign In / Create Account Button */}
-        <TouchableOpacity style={styles.authButton}>
-          <Text style={styles.authButtonText}>{isSignUp ? 'Create Account' : 'Sign In'}</Text>
-        </TouchableOpacity>
-
-        {/* Social Login (Only for Sign In) */}
-        {!isSignUp && (
-          <View style={styles.socialLogin}>
-            <TouchableOpacity style={styles.socialButton}>
-              <Image source={require('../assets/images/apple-logo.png')} style={styles.socialIcon} />
+          {!isSignUp && (
+            <TouchableOpacity onPress={resetPassword} className="mt-3">
+              <Text className="text-indigo-600 underline text-center">
+                Forgot password?
+              </Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.socialButton}>
-              <Image source={require('../assets/images/google-logo.png')} style={styles.socialIcon} />
-            </TouchableOpacity>
-          </View>
-        )}
+          )}
 
-        {/* Toggle Between Sign In & Sign Up */}
-        <TouchableOpacity onPress={() => setIsSignUp(!isSignUp)}>
-          <Text style={styles.toggleText}>
-            {isSignUp ? 'Already have an account? ' : 'Not a member? '}
-            <Text style={styles.toggleLink}>{isSignUp ? 'Sign in' : 'Create an account'}</Text>
-          </Text>
-        </TouchableOpacity>
+          {/* Switch Between Sign In & Sign Up */}
+          <TouchableOpacity
+            onPress={() => setIsSignUp(!isSignUp)}
+            className="mt-5"
+          >
+            <Text className="text-base text-gray-800 text-center">
+              {isSignUp ? "Already have an account? " : "Not a member? "}
+              <Text className="font-bold text-indigo-600">
+                {isSignUp ? "Sign in" : "Create an account"}
+              </Text>
+            </Text>
+          </TouchableOpacity>
+        </View>
       </View>
-      <Link href="/home">
-        <Text style={styles.link}>Skip to Home</Text>
-      </Link>
-    </View>
-    
+    </KeyboardAvoidingView>
   );
 }
-
-const styles = StyleSheet.create({
-  link: { 
-    marginTop:200, 
-    color: '#1D3D47', 
-    textDecorationLine: 'underline' 
-},
-
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#f5f5f5',
-  },
-  authBox: {
-    width: '85%',
-    backgroundColor: '#FFA500',
-    borderRadius: 20,
-    padding: 25,
-    alignItems: 'center',
-    elevation: 5,
-  },
-  authTitle: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    color: '#fff',
-    marginBottom: 20,
-  },
-  inputContainer: {
-    width: '100%',
-    backgroundColor: '#fff',
-    borderRadius: 10,
-    paddingHorizontal: 15,
-    paddingVertical: 12,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: '#ddd',
-  },
-  input: {
-    fontSize: 16,
-    color: '#333',
-  },
-  authButton: {
-    width: '100%',
-    backgroundColor: '#444',
-    padding: 15,
-    borderRadius: 10,
-    alignItems: 'center',
-    marginTop: 10,
-    shadowOpacity: 0.2,
-    shadowRadius: 5,
-    elevation: 5,
-  },
-  authButtonText: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#fff',
-  },
-  socialLogin: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    marginTop: 15,
-  },
-  socialButton: {
-    width: 150,
-    height: 50,
-    backgroundColor: '#999999',
-    borderRadius: 25,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginHorizontal: 10,
-  },
-  socialIcon: {
-    width: 30,
-    height: 30,
-    resizeMode: 'contain',
-  },
-  toggleText: {
-    marginTop: 20,
-    fontSize: 14,
-    color: '#333',
-  },
-  toggleLink: {
-    fontWeight: 'bold',
-    color: '#000',
-  },
-});
