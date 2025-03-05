@@ -298,8 +298,18 @@ export default function MapScreen() {
             strokeColor="blue"
           />
         )}
-        <View style={styles.buttonContainer}>
+        {/* <View style={styles.buttonContainer}>
           <Button title="Back" onPress={() => router.back()} />
+        </View> */}
+
+        {/* Back Button */}
+        <View className="absolute top-2r left-5">
+          <TouchableOpacity
+            className="bg-orange-700 px-4 py-3 top-20 rounded-lg shadow-lg"
+            onPress={() => router.back()}
+          >
+            <Text className="text-white font-bold">Back</Text>
+          </TouchableOpacity>
         </View>
         <TouchableOpacity
           style={styles.changeLocationButton}

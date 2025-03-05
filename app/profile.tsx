@@ -1,9 +1,11 @@
 import { useState, useEffect } from "react";
 import { supabase } from "../lib/supabase";
-import { View, Text, Alert, ActivityIndicator } from "react-native";
+import { View, Text, TouchableOpacity, ActivityIndicator } from "react-native";
+import { FontAwesome } from "@expo/vector-icons";
 import { Session } from "@supabase/supabase-js";
 import { useAuth } from "../context/AuthProvider";
 import * as Location from "expo-location";
+import { useRouter } from "expo-router";
 
 export default function Account({ session }: { session: Session }) {
   const [loading, setLoading] = useState(true);
@@ -14,6 +16,7 @@ export default function Account({ session }: { session: Session }) {
   );
   const [errorMsg, setErrorMsg] = useState("");
   const { user } = useAuth();
+  const router = useRouter();
 
   useEffect(() => {
     getProfile();
@@ -31,13 +34,13 @@ export default function Account({ session }: { session: Session }) {
       // ✅ Fetch user profile
       const { data, error } = await supabase
         .from("users")
-        .select("full_name")
+        .select("fullName")
         .eq("id", user.id)
         .single();
 
       if (error) throw error;
       setEmail(user.email);
-      setFullName(data?.full_name || "Not set");
+      setFullName(data?.fullName || "Not set");
       // ✅ Fetch location
       let { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== "granted") {
@@ -64,6 +67,11 @@ export default function Account({ session }: { session: Session }) {
 
   return (
     <View className="flex-1 bg-white px-5 py-20">
+      {/* Back Button */}
+      <TouchableOpacity onPress={() => router.back()} className="p-3 top-30">
+        <FontAwesome name="arrow-left" size={32} color="black" />
+      </TouchableOpacity>
+
       <Text className="text-2xl font-bold text-gray-900 text-center mb-6">
         My Profile
       </Text>

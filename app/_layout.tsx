@@ -7,6 +7,8 @@ import * as SplashScreen from "expo-splash-screen";
 import React, { useEffect } from "react";
 import "react-native-reanimated";
 import { AuthProvider } from "@/context/AuthProvider";
+import { LocationProvider } from "@/context/LocationProvider";
+import { ProviderContext } from "react-native-maps/lib/decorateMapComponent";
 
 export { ErrorBoundary } from "expo-router";
 
@@ -38,24 +40,28 @@ export default function RootLayout() {
 
   return (
     <AuthProvider>
-      <Stack screenOptions={{ headerShown: false }}>
-        <Stack.Screen
-          name="index"
-          options={{ title: "Welcome", headerShown: false }}
-        />
-        <Stack.Screen name="tutorial" options={{ title: "Tutorial" }} />
-        <Stack.Screen name="home" options={{ title: "Home" }} />
-        <Stack.Screen name="auth" options={{ title: "Auth" }} />
-        <Stack.Screen name="(tabs)" options={{ title: "Tabs" }} />
-        <Stack.Screen name="place/[id]" options={{ title: "Place Details" }} />
-        <Stack.Screen name="trips" options={{ title: "Trips" }} />
-        <Stack.Screen name="trip/[id]" options={{ title: "Trip Details" }} />
-        <Stack.Screen name="profile" options={{ title: "Profile" }} />
-        <Stack.Screen name="settings" options={{ title: "Settings" }} />
-        <Stack.Screen name="about" options={{ title: "About" }} />
-        <Stack.Screen name="start_trip" options={{ title: "Start Trip" }} />
-        <Stack.Screen name="map" options={{ title: "MapScreen" }} />
-      </Stack>
+      <LocationProvider>
+        <Stack screenOptions={{ headerShown: false }}>
+          <Stack.Screen
+            name="index"
+            options={{ title: "Welcome", headerShown: false }}
+          />
+          <Stack.Screen name="tutorial" options={{ title: "Tutorial" }} />
+          <Stack.Screen name="auth" options={{ title: "Auth" }} />
+          <Stack.Screen name="(tabs)" options={{ title: "Tabs" }} />
+          <Stack.Screen
+            name="place/[id]"
+            options={{ title: "Place Details" }}
+          />
+          <Stack.Screen name="trips" options={{ title: "Trips" }} />
+          <Stack.Screen name="trip/[id]" options={{ title: "Trip Details" }} />
+          <Stack.Screen name="profile" options={{ title: "Profile" }} />
+          <Stack.Screen name="settings" options={{ title: "Settings" }} />
+          <Stack.Screen name="about" options={{ title: "About" }} />
+          <Stack.Screen name="start_trip" options={{ title: "Start Trip" }} />
+          <Stack.Screen name="map" options={{ title: "MapScreen" }} />
+        </Stack>
+      </LocationProvider>
     </AuthProvider>
   );
 }

@@ -30,8 +30,6 @@ export default function MapScreen() {
 
   // ✅ Ensure participants is a string before parsing
   useEffect(() => {
-    console.log("Received params:", bestLatitude, bestLongitude, participants);
-
     if (typeof participants === "string") {
       try {
         const parsed = JSON.parse(participants);
@@ -58,7 +56,6 @@ export default function MapScreen() {
     if (bestLatitude && bestLongitude && parsedParticipants.length > 0) {
       fetchRoutes(parsedParticipants);
     } else {
-      console.log("Skipping route fetch due to missing location data.");
       setLoading(false);
     }
   }, [bestLatitude, bestLongitude, parsedParticipants]);
@@ -168,9 +165,9 @@ export default function MapScreen() {
       </MapView>
 
       {/* Back Button */}
-      <View className="absolute top-2 left-5">
+      <View className="absolute top-2r left-5">
         <TouchableOpacity
-          className="bg-gray-700 px-4 py-24 rounded-lg shadow-lg"
+          className="bg-orange-700 px-4 py-3 top-20 rounded-lg shadow-lg"
           onPress={() => router.back()}
         >
           <Text className="text-white font-bold">Back</Text>

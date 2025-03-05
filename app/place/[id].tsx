@@ -12,6 +12,7 @@ import {
 import { useLocalSearchParams, useRouter } from "expo-router";
 import Carousel from "react-native-reanimated-carousel";
 import axios from "axios";
+import FontAwesome from "@expo/vector-icons/FontAwesome";
 
 const { width, height } = Dimensions.get("window"); // Get screen dimensions
 
@@ -73,6 +74,13 @@ export default function PlaceScreen() {
 
   return (
     <View className="flex-1 bg-white">
+      {/* Header */}
+      <View className="flex-row justify-between items-center px-6 py-12 bg-orange-400 shadow-md">
+        <TouchableOpacity onPress={() => router.back()} className="p-2">
+          <FontAwesome name="arrow-left" size={28} color="black" />
+        </TouchableOpacity>
+      </View>
+
       {loading ? (
         <ActivityIndicator
           size="large"
@@ -93,7 +101,7 @@ export default function PlaceScreen() {
               renderItem={({ item }) => (
                 <Image
                   source={{ uri: item }}
-                  className="w-full h-full rounded-xl shadow-lg"
+                  className="w-full h-full shadow-lg"
                   resizeMode="cover" // Ensures image fills the entire space
                 />
               )}
@@ -120,7 +128,6 @@ export default function PlaceScreen() {
               View on Map
             </Text>
           </TouchableOpacity>
-
           {/* 📌 Reviews Section */}
           <View className="bg-gray-100 rounded-xl px-5 py-4 mx-5 mt-6 shadow-md">
             <Text className="text-xl font-bold text-gray-800 mb-3">

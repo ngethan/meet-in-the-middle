@@ -26,8 +26,10 @@ export default function SettingsScreen() {
 
   // Toggle Settings
   const toggleDarkMode = () => setDarkMode(!darkMode);
-  const toggleEmailNotifications = () => setEmailNotifications(!emailNotifications);
-  const togglePushNotifications = () => setPushNotifications(!pushNotifications);
+  const toggleEmailNotifications = () =>
+    setEmailNotifications(!emailNotifications);
+  const togglePushNotifications = () =>
+    setPushNotifications(!pushNotifications);
 
   // Change Password Function
   const changePassword = async () => {
@@ -40,7 +42,7 @@ export default function SettingsScreen() {
         if (error) Alert.alert("Error", error.message);
         else Alert.alert("Success", "Password changed successfully!");
       },
-      "secure-text"
+      "secure-text",
     );
   };
 
@@ -63,16 +65,25 @@ export default function SettingsScreen() {
             }
           },
         },
-      ]
+      ],
     );
   };
 
   return (
     <ScrollView style={styles.container}>
+      <View className="absolute top-2r left-5">
+        {/* Back Button */}
+        <TouchableOpacity onPress={() => router.back()}>
+          <FontAwesome name="arrow-left" size={32} color="black" />
+        </TouchableOpacity>
+      </View>
       <Text style={styles.settingsTitle}>Settings</Text>
 
       {/* Profile */}
-      <TouchableOpacity style={styles.settingItem} onPress={() => router.push("/profile")}>
+      <TouchableOpacity
+        style={styles.settingItem}
+        onPress={() => router.push("/profile")}
+      >
         <FontAwesome name="user" size={22} color="#444" />
         <Text style={styles.settingText}>Edit Profile</Text>
       </TouchableOpacity>
@@ -87,13 +98,19 @@ export default function SettingsScreen() {
       <View style={styles.settingItem}>
         <FontAwesome name="bell" size={22} color="#444" />
         <Text style={styles.settingText}>Push Notifications</Text>
-        <Switch value={pushNotifications} onValueChange={togglePushNotifications} />
+        <Switch
+          value={pushNotifications}
+          onValueChange={togglePushNotifications}
+        />
       </View>
 
       <View style={styles.settingItem}>
         <FontAwesome name="envelope" size={22} color="#444" />
         <Text style={styles.settingText}>Email Notifications</Text>
-        <Switch value={emailNotifications} onValueChange={toggleEmailNotifications} />
+        <Switch
+          value={emailNotifications}
+          onValueChange={toggleEmailNotifications}
+        />
       </View>
 
       {/* Dark Mode */}
@@ -120,10 +137,13 @@ export default function SettingsScreen() {
       </View>
 
       {/* Sign Out */}
-      <TouchableOpacity style={styles.logoutButton} onPress={() => {
-        signOut()
-        router.push("/auth");
-        }}>
+      <TouchableOpacity
+        style={styles.logoutButton}
+        onPress={() => {
+          signOut();
+          router.push("/auth");
+        }}
+      >
         <FontAwesome name="sign-out" size={22} color="#FFF" />
         <Text style={styles.logoutButtonText}>Sign Out</Text>
       </TouchableOpacity>
@@ -143,6 +163,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#F9F9F9",
     padding: 20,
+    top: 50,
   },
   settingsTitle: {
     fontSize: 26,

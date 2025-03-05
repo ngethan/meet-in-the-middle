@@ -18,6 +18,8 @@ import { FontAwesome } from "@expo/vector-icons";
 import * as Location from "expo-location";
 import MapView, { Marker } from "react-native-maps";
 import { useAuth } from "@/context/AuthProvider";
+import { db } from "../database/client";
+import { trips } from "../database/schema";
 
 import moment from "moment";
 import { Button } from "@rneui/base";
@@ -34,7 +36,7 @@ const nonCryptoUUID = () =>
 export default function TripsScreen() {
   const router = useRouter();
   const { chatId, chatName } = useLocalSearchParams(); // Chat ID & Name from params
-  const [trips, setTrips] = useState<any[]>([]);
+  const [curTrips, setCurTrips] = useState<any[]>([]);
   const [newTripName, setNewTripName] = useState("");
   const [startingLocation, setStartingLocation] = useState("");
   const [tripModalVisible, setTripModalVisible] = useState(false);
@@ -70,10 +72,10 @@ export default function TripsScreen() {
     const { data, error } = await supabase
       .from("trips")
       .select("*")
-      .eq("chat_id", chatId)
-      .order("created_at", { ascending: false });
+      .eq("conversationId", chatId)
+      .order("createdAt", { ascending: false });
     if (!error) {
-      setTrips(data);
+      setCurTrips(data);
     }
   }
 
@@ -86,23 +88,35 @@ export default function TripsScreen() {
     const newTripId = nonCryptoUUID();
     const newId = nonCryptoUUID();
 
+    // await db.insert(trips).values([
+    //   {
+    //     id: newTripId,
+    //     conversationId: chatId,
+    //     creatorId: user.id,
+    //     name: newTripName,
+    //     createdAt: new Date().toISOString(),
+    //     startData: startDate.toISOString(), // ✅ Store start date with time
+    //     endDate: endDate.toISOString(), // ✅ Store end date with time
+    //   },
+    // ])
+
     const { error } = await supabase.from("trips").insert([
       {
         id: newTripId,
-        chat_id: chatId,
-        creator_id: user.id,
+        conversationId: chatId,
+        creatorId: user.id,
         name: newTripName,
-        created_at: new Date().toISOString(),
-        start_date: startDate.toISOString(), // ✅ Store start date with time
-        end_date: endDate.toISOString(), // ✅ Store end date with time
+        createdAt: new Date().toISOString(),
+        startDate: startDate.toISOString(), // ✅ Store start date with time
+        endDate: endDate.toISOString(), // ✅ Store end date with time
       },
     ]);
 
     // ✅Fetch all users in the chat
     const { data: members, error: membersError } = await supabase
-      .from("group_members")
-      .select("user_id")
-      .eq("chat_id", chatId);
+      .from("conversationParticipants")
+      .select("userId")
+      .eq("conversationId", chatId);
 
     if (membersError) throw membersError;
     if (!members || members.length === 0) {
@@ -111,21 +125,23 @@ export default function TripsScreen() {
     // ✅ Step 3: Add all users to the trip
     const participantsData = members.map((member) => ({
       id: nonCryptoUUID(), // Unique ID for each participant
-      trip_id: newTripId,
-      user_id: member.user_id,
-      starting_location: "Not set", // Default value
-      latitude: null, // Default
-      longitude: null, // Default
-      joined_at: new Date().toISOString(),
+      tripId: newTripId,
+      userId: member.userId,
+      startingLocation: null, // Default value
+      latitude: 0.0, // Default
+      longitude: 0.0, // Default
+      joinedAt: new Date().toISOString(),
     }));
 
+    console.log("Success");
+
     const { error: participantsError } = await supabase
-      .from("trip_participants")
+      .from("tripParticipants")
       .insert(participantsData);
 
     if (participantsError) throw participantsError;
 
-    if (!error) {
+    if (!error && !participantsError) {
       setNewTripName("");
       setStartingLocation("");
       setTripModalVisible(false);
@@ -139,15 +155,17 @@ export default function TripsScreen() {
       {/* 📌 Header */}
       <View className="flex-row items-center px-6 py-16 bg-orange-500 shadow-lg">
         <TouchableOpacity onPress={() => router.back()} className="p-2">
-          <FontAwesome name="arrow-left" size={24} color="white" />
+          <FontAwesome name="arrow-left" size={28} color="black" />
         </TouchableOpacity>
-        <Text className="text-lg font-bold text-white ml-4">{chatName}</Text>
+        <Text className="text-lg font-bold text-black ml-4">
+          Trips of Chat: {chatName}
+        </Text>
       </View>
 
       {/* 📌 List of Trips */}
       <FlatList
         className="flex-1 w-full"
-        data={trips}
+        data={curTrips}
         keyExtractor={(item) => item.id}
         horizontal
         showsHorizontalScrollIndicator={false}
@@ -179,8 +197,8 @@ export default function TripsScreen() {
             {/* 📌 Image */}
             <Image
               source={{
-                uri: item.best_photos
-                  ? item.best_photos[0]
+                uri: item.bestPhotos
+                  ? item.bestPhotos[0]
                   : "https://www.four-paws.org/our-stories/publications-guides/a-cats-personality",
               }}
               className="w-full h-[50%] rounded-t-2xl"
@@ -193,10 +211,10 @@ export default function TripsScreen() {
                 {item.name}
               </Text>
               <Text className="text-sm text-gray-500 mt-1">
-                {moment(item.start_date).format("MMMM DD, YYYY - hh:mm A")}
+                {moment(item.startDate).format("MMMM DD, YYYY - hh:mm A")}
               </Text>
               <Text className="text-sm text-gray-500 mt-1">
-                {moment(item.end_date).format("MMMM DD, YYYY - hh:mm A")}
+                {moment(item.endDate).format("MMMM DD, YYYY - hh:mm A")}
               </Text>
             </View>
           </TouchableOpacity>
@@ -205,12 +223,15 @@ export default function TripsScreen() {
 
       {/* 📌 Floating Action Button to Create New Trip */}
       <TouchableOpacity
-        className="absolute bottom-20 right-6 bg-orange-500 w-16 h-16 rounded-full flex items-center justify-center shadow-lg"
+        className="absolute bottom-20 right-6 bg-orange-500 w-20 h-20 rounded-full flex items-center justify-center shadow-lg"
         onPress={() => {
           setTripModalVisible(true);
         }}
       >
-        <FontAwesome name="plus" size={30} color="white" />
+        {/* <FontAwesome name="plus" size={30} color="white" /> */}
+        <Text className="text-white font-bold text-center text-sm">
+          Create Trips
+        </Text>
       </TouchableOpacity>
 
       <Modal visible={tripModalVisible} transparent animationType="slide">
@@ -255,7 +276,7 @@ export default function TripsScreen() {
             {/* 📌 End Date Picker */}
             <Text className="text-lg font-semibold mb-2">End Date & Time</Text>
             <TouchableOpacity
-              className="p-4 bg-gray-100 rounded-xl border border-gray-300"
+              className="p-4 bg-gray-100 rounded-xl border border-gray-300 mb-4"
               onPress={() => setShowEndPicker(true)}
             >
               <Text className="text-gray-700 text-lg">
@@ -285,7 +306,10 @@ export default function TripsScreen() {
               </TouchableOpacity>
               <TouchableOpacity
                 className="bg-gray-300 py-3 w-[48%] rounded-xl"
-                onPress={() => setTripModalVisible(false)}
+                onPress={() => {
+                  setTripModalVisible(false);
+                  setNewTripName("");
+                }}
               >
                 <Text className="text-gray-800 font-bold text-center text-lg">
                   Cancel

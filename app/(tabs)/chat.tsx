@@ -18,6 +18,7 @@ import { FontAwesome } from "@expo/vector-icons";
 import { randomUUID } from "crypto"; // Native Node.js 16+ alternative
 import moment from "moment";
 import { router } from "expo-router";
+import LoadingOverlay from "../loadingoverlay";
 
 const { width, height } = Dimensions.get("window");
 
@@ -34,6 +35,7 @@ export default function ChatScreen() {
   const [groupMembers, setGroupMembers] = useState([]);
   const [isMembersModalVisible, setMembersModalVisible] = useState(false);
   const [isFabMenuOpen, setFabMenuOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(false); // Control loading animation
   const popupScale = React.useRef(new Animated.Value(0)).current;
 
   React.useEffect(() => {
@@ -65,24 +67,23 @@ export default function ChatScreen() {
     if (!user) return;
 
     const { data: groupData, error: groupError } = await supabase
-      .from("group_members")
-      .select("chat_id")
-      .eq("user_id", user.id);
+      .from("conversationParticipants")
+      .select("conversationId")
+      .eq("userId", user.id);
 
     if (groupError) {
       console.error("Error fetching user groups:", groupError);
       return;
     }
 
-    const groupIds = groupData.map((group) => group.chat_id);
+    const groupIds = groupData.map((group) => group.conversationId);
 
     if (groupIds.length > 0) {
       const { data: chatsData, error: chatsError } = await supabase
         .from("chats")
         .select("*")
         .in("id", groupIds)
-        .order("created_at", { ascending: false });
-
+        .order("createdAt", { ascending: false });
       if (!chatsError) setChats(chatsData);
     }
   }
@@ -99,10 +100,10 @@ export default function ChatScreen() {
     if (!selectedChat) return;
 
     const { data, error } = await supabase
-      .from("group_members")
-      .select("user_id, users (full_name, email)")
-      .eq("chat_id", selectedChat.id)
-      .order("joined_at", { ascending: true });
+      .from("conversationParticipants")
+      .select("userId, users (fullName)")
+      .eq("conversationId", selectedChat.id)
+      .order("lastDate", { ascending: true });
 
     if (!error) {
       setGroupMembers(data.map((member) => member.users));
@@ -123,7 +124,7 @@ export default function ChatScreen() {
       case "trips":
         router.push({
           pathname: "/trips",
-          params: { chatId: selectedChat.id, chatName: selectedChat.name },
+          params: { chatId: selectedChat.id, chatName: selectedChat.chatName },
         });
         break;
       default:
@@ -149,8 +150,8 @@ export default function ChatScreen() {
     const { data: messagesData, error: messagesError } = await supabase
       .from("messages")
       .select("*")
-      .eq("chat_id", chatId)
-      .order("created_at", { ascending: true });
+      .eq("conversationId", chatId)
+      .order("createdAt", { ascending: true });
 
     if (messagesError) {
       console.error("Error fetching messages:", messagesError);
@@ -158,12 +159,12 @@ export default function ChatScreen() {
     }
 
     // Get unique user IDs from messages
-    const userIds = [...new Set(messagesData.map((msg) => msg.user_id))];
+    const userIds = [...new Set(messagesData.map((msg) => msg.senderId))];
 
     // Fetch user details (full_name) from users table
     const { data: usersData, error: usersError } = await supabase
       .from("users")
-      .select("id, full_name")
+      .select("id, fullName")
       .in("id", userIds);
 
     if (usersError) {
@@ -171,96 +172,143 @@ export default function ChatScreen() {
       return;
     }
 
-    // Create a map of user_id -> full_name
+    // Create a map of userId -> full_name
     const userMap: { [key: string]: string } = {};
     usersData.forEach((user) => {
-      userMap[user.id] = user.full_name;
+      userMap[user.id] = user.fullName;
     });
 
     // Map messages to include full_name instead of email
     setMessages(
       messagesData.map((msg) => ({
-        _id: msg.id,
-        text: msg.text,
-        createdAt: new Date(msg.created_at),
+        _id: msg.id || nonCryptoUUID(), // Use msg.id if available; fallback to a generated UUID
+        content: msg.content,
+        createdAt: new Date(msg.createdAt),
         user: {
-          _id: msg.user_id,
-          name: userMap[msg.user_id] || "Unknown User", // Fallback if name is missing
+          _id: msg.senderId,
+          name: userMap[msg.senderId] || "Unknown User", // Fallback if name is missing
         },
       })),
     );
   }
-
   async function fetchChats() {
+    setIsLoading(true);
     try {
       // ✅ Step 1: Get all chat groups where the user is a member
       const { data: userChats, error: userChatsError } = await supabase
-        .from("group_members")
-        .select("chat_id")
-        .eq("user_id", user.id);
+        .from("conversationParticipants")
+        .select("conversationId")
+        .eq("userId", user.id);
 
-      if (userChatsError) throw userChatsError;
+      if (userChatsError) {
+        throw new Error(
+          `Failed to fetch user chat groups: ${userChatsError.message}`,
+        );
+      }
 
       // Extract chat IDs
-      const chatIds = userChats.map((item) => item.chat_id);
+      const chatIds = userChats?.map((item) => item.conversationId) || [];
 
-      console.log(user.id, "   ", chatIds);
       if (chatIds.length === 0) {
         setChats([]); // If user isn't in any chats, reset state
+        setIsLoading(false);
         return;
       }
 
       // ✅ Step 2: Fetch chat group details
       const { data: chatsData, error: chatsError } = await supabase
-        .from("chats")
+        .from("conversations")
         .select("*")
         .in("id", chatIds)
-        .order("created_at", { ascending: false });
+        .order("lastDate", { ascending: false });
 
-      if (chatsError) throw chatsError;
+      if (chatsError) {
+        throw new Error(
+          `Failed to fetch chat group details: ${chatsError.message}`,
+        );
+      }
 
       // ✅ Step 3: Fetch latest messages for each chat
       const chatsWithLatestMessages = await Promise.all(
         chatsData.map(async (chat) => {
-          const { data: latestMessages, error: messagesError } = await supabase
-            .from("messages")
-            .select("text, created_at, user_id")
-            .eq("chat_id", chat.id)
-            .order("created_at", { ascending: false }) // Get latest first
-            .limit(1);
+          try {
+            const { data: latestMessages, error: messagesError } =
+              await supabase
+                .from("messages")
+                .select("content, createdAt, senderId")
+                .eq("conversationId", chat.id)
+                .order("createdAt", { ascending: false })
+                .limit(1);
 
-          if (messagesError) console.error(messagesError);
+            if (messagesError) {
+              console.warn(
+                `Failed to fetch latest message for chat ${chat.id}:`,
+                messagesError,
+              );
+              return {
+                ...chat,
+                lastMessage: "No messages yet",
+                lastMessageTime: "",
+              };
+            }
 
-          const latestMessage = latestMessages?.[0] || null;
+            const latestMessage = latestMessages?.[0] || null;
 
-          let formattedMessage = "No messages yet";
-          let timestamp = "";
+            let formattedMessage = "No messages yet";
+            let timestamp = "";
 
-          if (latestMessage) {
-            // ✅ Fetch sender's full name
-            const { data: userData, error: userError } = await supabase
-              .from("users")
-              .select("full_name")
-              .eq("id", latestMessage.user_id)
-              .single();
+            if (latestMessage) {
+              try {
+                // ✅ Fetch sender's full name
+                const { data: userData, error: userError } = await supabase
+                  .from("users")
+                  .select("fullName")
+                  .eq("id", latestMessage.senderId)
+                  .single();
 
-            const senderName = userData?.full_name || "Unknown";
+                if (userError) {
+                  console.warn(
+                    `Failed to fetch sender name for message ${latestMessage.id}:`,
+                    userError,
+                  );
+                }
 
-            formattedMessage = `${senderName}: ${latestMessage.text}`;
-            timestamp = latestMessage.created_at;
+                const senderName = userData?.fullName || "Unknown";
+                formattedMessage = `${senderName}: ${latestMessage.content}`;
+                timestamp = latestMessage.createdAt;
+              } catch (userFetchError) {
+                console.error(
+                  "Unexpected error fetching sender name:",
+                  userFetchError,
+                );
+              }
+            }
+
+            return {
+              ...chat,
+              lastMessage: formattedMessage,
+              lastMessageTime: timestamp,
+            };
+          } catch (chatMessageError) {
+            console.error(
+              `Error processing chat ${chat.id}:`,
+              chatMessageError,
+            );
+            return {
+              ...chat,
+              lastMessage: "Error loading messages",
+              lastMessageTime: "",
+            };
           }
-
-          return {
-            ...chat,
-            lastMessage: formattedMessage,
-            lastMessageTime: timestamp,
-          };
         }),
       );
 
       setChats(chatsWithLatestMessages);
     } catch (error) {
       console.error("Error fetching chats:", error);
+      alert("Failed to load chats. Please try again later.");
+    } finally {
+      setIsLoading(false);
     }
   }
 
@@ -270,7 +318,7 @@ export default function ChatScreen() {
     // Fetch the user's full name from the 'users' table
     const { data: userData, error: userError } = await supabase
       .from("users")
-      .select("full_name") // Assuming the column name is 'full_name'
+      .select("fullName") // Assuming the column name is 'fullName'
       .eq("id", user.id)
       .single();
 
@@ -279,12 +327,12 @@ export default function ChatScreen() {
       return;
     }
 
-    const userName = userData.full_name || "Unknown User"; // Fallback in case the name is missing
+    const userName = userData.fullName || "Unknown User"; // Fallback in case the name is missing
     const newMessage = {
-      chat_id: selectedChat.id,
-      user_id: user.id,
-      text: messageText.trim(),
-      created_at: new Date().toISOString(),
+      conversationId: selectedChat.id,
+      senderId: user.id,
+      content: messageText.trim(),
+      createdAt: new Date().toISOString(),
     };
 
     const { error } = await supabase.from("messages").insert([newMessage]);
@@ -293,13 +341,18 @@ export default function ChatScreen() {
       setMessages((prev: any) => [
         ...prev,
         {
-          _id: newMessage.chat_id,
-          text: newMessage.text,
+          _id: newMessage.conversationId,
+          content: newMessage.content,
           user: { _id: user.id, name: userName },
           createdAt: new Date(),
         },
       ]);
       setMessageText("");
+
+      await supabase
+        .from("conversations")
+        .update({ lastMessage: newMessage.content })
+        .eq("id", newMessage.conversationId);
     } else {
       console.error("Error sending message:", error);
     }
@@ -315,29 +368,37 @@ export default function ChatScreen() {
   const handleCreateGroup = async () => {
     if (!newGroupName.trim())
       return Alert.alert("Error", "Group name cannot be empty");
+    setIsLoading(true);
 
     const newGroupId = nonCryptoUUID();
-    const { error } = await supabase.from("chats").insert([
+    const { error } = await supabase.from("conversations").insert([
       {
         id: newGroupId,
-        name: newGroupName,
-        created_at: new Date().toISOString(),
+        chatName: newGroupName,
+        lastDate: new Date().toISOString(),
+        ownerId: user.id,
+        participantIds: [user.id],
+        lastMessage: "",
       },
     ]);
 
-    const { error: memberError } = await supabase.from("group_members").insert([
-      {
-        chat_id: newGroupId,
-        user_id: user.id,
-        joined_at: new Date().toISOString(),
-      },
-    ]);
+    const { error: memberError } = await supabase
+      .from("conversationParticipants")
+      .insert([
+        {
+          conversationId: newGroupId,
+          userId: user.id,
+          lastDate: new Date().toISOString(),
+        },
+      ]);
 
-    if (!error && !memberError) {
+    if (!error) {
       setNewGroupName("");
       setModalVisible(false);
+      setIsLoading(false);
+      fetchChats();
       fetchUserGroups();
-      handleSelectChat({ id: newGroupId, name: newGroupName });
+      handleSelectChat({ id: newGroupId, chatName: newGroupName });
     }
   };
   /** 📌 Invite user to group */
@@ -356,10 +417,10 @@ export default function ChatScreen() {
 
     // Check if the user is already in the group
     const { data: existingMember, error: memberError } = await supabase
-      .from("group_members")
+      .from("conversationParticipants")
       .select("id")
-      .eq("chat_id", selectedChat.id)
-      .eq("user_id", userData.id)
+      .eq("conversationId", selectedChat.id)
+      .eq("userId", userData.id)
       .single();
 
     if (memberError && memberError.code !== "PGRST116") {
@@ -371,11 +432,11 @@ export default function ChatScreen() {
     }
 
     // Add user to group
-    const { error } = await supabase.from("group_members").insert([
+    const { error } = await supabase.from("conversationParticipants").insert([
       {
-        chat_id: selectedChat.id,
-        user_id: userData.id,
-        joined_at: new Date().toISOString(),
+        conversationId: selectedChat.id,
+        userId: userData.id,
+        lastDate: new Date().toISOString(),
       },
     ]);
 
@@ -391,30 +452,35 @@ export default function ChatScreen() {
   return (
     <View className="flex-1 bg-gray-100">
       {/* 📌 Header */}
-      <View className="flex-row justify-between items-center px-6 py-16 bg-white shadow-lg border-b border-gray-200">
+      <View className="flex-row justify-between items-center px-6 py-16 bg-orange-500 shadow-lg border-b border-gray-200">
         {selectedChat && (
           <TouchableOpacity
             onPress={() => {
               setSelectedChat(null);
               setMessages([]);
               setMessageText("");
+              setFabMenuOpen(false);
             }}
             className="p-2"
           >
-            <FontAwesome name="arrow-left" size={24} color="black" />
+            <FontAwesome name="arrow-left" size={28} color="black" />
           </TouchableOpacity>
         )}
-        <Text className="text-lg font-bold text-gray-800">
-          {selectedChat ? selectedChat.name : "Messages"}
+        <Text className="text-lg font-bold text-black">
+          {selectedChat ? selectedChat.chatName : "Messages"}
         </Text>
         {selectedChat && (
           <TouchableOpacity
             className="p-2"
             onPress={() => {
-              setFabMenuOpen(true);
+              if (isFabMenuOpen) {
+                setFabMenuOpen(false);
+              } else {
+                setFabMenuOpen(true);
+              }
             }}
           >
-            <FontAwesome name="ellipsis-v" size={24} color="black" />
+            <FontAwesome name="ellipsis-v" size={28} color="black" />
           </TouchableOpacity>
         )}
       </View>
@@ -426,11 +492,11 @@ export default function ChatScreen() {
           keyExtractor={(item) => item.id}
           renderItem={({ item }) => (
             <TouchableOpacity
-              className="bg-white rounded-xl p-4 mx-4 my-4 shadow-md border border-gray-200 hover:shadow-lg"
+              className="bg-orange-100 rounded-xl p-6 mx-4 my-4 shadow-md border border-gray-200 hover:shadow-lg"
               onPress={() => handleSelectChat(item)}
             >
-              <Text className="text-lg font-bold text-gray-900">
-                {item.name}
+              <Text className="text-lg font-semibold text-gray-900">
+                {item.chatName}
               </Text>
               <Text className="text-sm text-gray-500">
                 {item.lastMessage || "No messages yet..."}
@@ -447,14 +513,14 @@ export default function ChatScreen() {
               return (
                 <View
                   key={msg._id}
-                  className={`p-3 rounded-xl my-2 max-w-[75%] ${
+                  className={`p-4 rounded-lg my-2 max-w-[75%] shadow-sm ${
                     isMyMessage
-                      ? "bg-yellow-400 self-end shadow-lg"
-                      : "bg-gray-200 self-start"
+                      ? "bg-orange-300 text-white self-end shadow-lg"
+                      : "bg-gray-200 text-black self-start"
                   }`}
                 >
                   <Text className="text-sm font-bold">{msg.user.name}</Text>
-                  <Text className="text-base">{msg.text}</Text>
+                  <Text className="text-base">{msg.content}</Text>
                   <Text className="text-xs text-gray-600 self-end mt-1">
                     {moment(msg.createdAt).format("hh:mm A")}
                   </Text>
@@ -484,10 +550,14 @@ export default function ChatScreen() {
       {/* 📌 Create Group Button */}
       {!selectedChat && (
         <TouchableOpacity
-          className="absolute bottom-40 right-6 bg-orange-500 w-16 h-16 rounded-full flex items-center justify-center shadow-lg"
+          className="absolute bottom-40 right-6 bg-orange-500 w-20 h-20 rounded-full flex items-center justify-center shadow-lg"
           onPress={() => setModalVisible(true)}
         >
-          <FontAwesome name="plus" size={30} color="white" />
+          {/* <FontAwesome name="plus" size={30} color="white" />
+           */}
+          <Text className="text-white font-bold text-center text-sm">
+            Create Group
+          </Text>
         </TouchableOpacity>
       )}
 
@@ -504,7 +574,7 @@ export default function ChatScreen() {
           className="flex-row items-center space-x-3 p-2 rounded-lg bg-gray-50 active:bg-gray-100"
           activeOpacity={0.7}
         >
-          <FontAwesome name="user-plus" size={22} color="black" />
+          <FontAwesome name="user-plus" size={24} color="black" />
           <Text className="text-base text-gray-800 px-3">Invite User</Text>
         </TouchableOpacity>
         <TouchableOpacity
@@ -512,7 +582,7 @@ export default function ChatScreen() {
           className="flex-row items-center space-x-3 p-2 rounded-lg bg-gray-50 active:bg-gray-100"
           activeOpacity={0.7}
         >
-          <FontAwesome name="users" size={22} color="black" />
+          <FontAwesome name="users" size={24} color="black" />
           <Text className="text-base text-gray-800 px-3">See Members</Text>
         </TouchableOpacity>
         <TouchableOpacity
@@ -520,7 +590,7 @@ export default function ChatScreen() {
           className="flex-row items-center px-3 p-2 rounded-lg bg-gray-50 active:bg-gray-100"
           activeOpacity={0.7}
         >
-          <FontAwesome name="map" size={22} color="black" />
+          <FontAwesome name="map" size={24} color="black" />
           <Text className="text-base text-gray-800 px-3">Trips</Text>
         </TouchableOpacity>
       </Animated.View>
@@ -541,7 +611,7 @@ export default function ChatScreen() {
                     className="bg-gray-100 p-3 rounded-lg mb-2 shadow-sm"
                   >
                     <Text className="text-lg font-semibold text-gray-800">
-                      {member.full_name || member.email}
+                      {member.fullName || member.email}
                     </Text>
                   </View>
                 ))}
@@ -635,6 +705,12 @@ export default function ChatScreen() {
           </View>
         </View>
       </Modal>
+      {/* 📌 Loading Animation */}
+      <LoadingOverlay
+        visible={isLoading}
+        type="dots"
+        message="Loading Messages..."
+      />
     </View>
   );
 }

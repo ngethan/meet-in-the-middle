@@ -68,6 +68,10 @@ export default function HomeScreen() {
         types: place.types,
       }));
 
+      const uniqueTypes = [...new Set(results.flatMap((dest) => dest.types))];
+
+      console.log(uniqueTypes);
+
       results = results.map((place) => ({
         ...place,
         distance: calculateDistance(
@@ -145,10 +149,8 @@ export default function HomeScreen() {
 
   return (
     <View className="flex-1 bg-gray-100">
-      <NavigationDrawer onClose={toggleDrawer} isOpen={drawerOpen} />
-
       {/* Header */}
-      <View className="flex-row justify-between items-center px-6 py-16 bg-white shadow-md">
+      <View className="flex-row justify-between items-center px-6 py-16 bg-orange-400 shadow-md">
         <TouchableOpacity onPress={toggleDrawer}>
           <FontAwesome name="bars" size={32} color="black" />
         </TouchableOpacity>
@@ -170,7 +172,7 @@ export default function HomeScreen() {
             activeOpacity={0.8}
             onPress={() => router.push(`/place/${item.id}`)}
           >
-            <Image source={{ uri: item.image }} className="w-full h-60" />
+            <Image source={{ uri: item.image }} className="w-full h-80" />
             <View className="absolute bottom-0 left-0 right-0 bg-black/50 p-4">
               <Text className="text-white text-xl font-bold">{item.title}</Text>
               <Text className="text-yellow-300 font-semibold">
@@ -188,9 +190,10 @@ export default function HomeScreen() {
       />
 
       {/* Floating Action Button */}
-      <TouchableOpacity className="absolute bottom-40 right-6 bg-orange-500 w-16 h-16 rounded-full justify-center items-center shadow-lg">
+      {/* <TouchableOpacity className="absolute bottom-40 right-6 bg-orange-500 w-16 h-16 rounded-full justify-center items-center shadow-lg">
         <FontAwesome name="plus" size={30} color="white" />
-      </TouchableOpacity>
+      </TouchableOpacity> */}
+      <NavigationDrawer onClose={toggleDrawer} isOpen={drawerOpen} />
     </View>
   );
 }

@@ -17,6 +17,8 @@ import * as AppleAuthentication from "expo-apple-authentication";
 import { LinearGradient } from "expo-linear-gradient";
 import { verifyInstallation } from "nativewind";
 import { useAuth } from "../context/AuthProvider";
+import LoadingOverlay from "./loadingoverlay";
+// import { db } from "../database/client";
 
 AppState.addEventListener("change", (state) => {
   if (state === "active") {
@@ -39,7 +41,6 @@ export default function AuthScreen() {
       const { data } = await supabase.auth.getUser();
       if (data?.user) {
         const { user } = data;
-        console.log(user);
         if (user.email_confirmed_at) {
           router.replace("/(tabs)/home");
         }
@@ -69,8 +70,6 @@ export default function AuthScreen() {
   async function signUpWithEmail() {
     setLoading(true);
 
-    console.log("Signing up");
-
     // ✅ Step 1: Sign up user
     const { data, error } = await supabase.auth.signUp({
       email,
@@ -86,44 +85,41 @@ export default function AuthScreen() {
       return;
     }
 
-    Alert.alert("Please check your inbox for email verification!");
+    // // ✅ Step 2: Wait for user to confirm email
+    // const checkEmailVerified = async () => {
+    //   let attempts = 0;
+    //   const interval = setInterval(async () => {
+    //     if (attempts >= 10) {
+    //       clearInterval(interval);
+    //       setLoading(false);
+    //       return;
+    //     }
 
-    // ✅ Step 2: Wait for user to confirm email
-    const checkEmailVerified = async () => {
-      let attempts = 0;
-      const interval = setInterval(async () => {
-        if (attempts >= 10) {
-          clearInterval(interval);
-          setLoading(false);
-          return;
-        }
+    //     const { data: userData, error: userError } =
+    //       await supabase.auth.getUser();
+    //     if (userError) {
+    //       clearInterval(interval);
+    //       setLoading(false);
+    //       return;
+    //     }
 
-        const { data: userData, error: userError } =
-          await supabase.auth.getUser();
-        if (userError) {
-          clearInterval(interval);
-          setLoading(false);
-          return;
-        }
+    //     if (userData?.user?.email_confirmed_at) {
+    //       clearInterval(interval);
 
-        if (userData?.user?.email_confirmed_at) {
-          clearInterval(interval);
+    //       // ✅ Step 3: Insert user into DB after verification
+    //       await supabase
+    //         .from("users")
+    //         .insert([{ id: userData.user.id, email, fullName: fullName }]);
 
-          // ✅ Step 3: Insert user into DB after verification
-          await supabase
-            .from("users")
-            .insert([{ id: userData.user.id, email, full_name: fullName }]);
+    //       setLoading(false);
+    //       router.replace("/(tabs)/home");
+    //     }
+    //     attempts++;
+    //   }, 500000);
+    // };
 
-          setLoading(false);
-          router.replace("/(tabs)/home");
-        }
-        attempts++;
-      }, 500000);
-    };
-
-    checkEmailVerified();
-
-    // router.push("/(tabs)/home");
+    // checkEmailVerified();
+    router.push("/(tabs)/home");
   }
 
   async function resetPassword() {
@@ -195,13 +191,9 @@ export default function AuthScreen() {
             onPress={isSignUp ? signUpWithEmail : signInWithEmail}
             className="w-full p-3 rounded-lg mt-2 bg-indigo-600 shadow-lg items-center"
           >
-            {loading ? (
-              <ActivityIndicator color="#FFF" />
-            ) : (
-              <Text className="text-lg font-bold text-white">
-                {isSignUp ? "Sign Up" : "Sign In"}
-              </Text>
-            )}
+            <Text className="text-lg font-bold text-white">
+              {isSignUp ? "Sign Up" : "Sign In"}
+            </Text>
           </TouchableOpacity>
 
           {/* Apple Authentication */}
@@ -253,6 +245,12 @@ export default function AuthScreen() {
           </TouchableOpacity>
         </View>
       </View>
+      {/* 📌 Loading Animation */}
+      <LoadingOverlay
+        visible={loading}
+        type="dots"
+        message="Authenticating..."
+      />
     </KeyboardAvoidingView>
   );
 }

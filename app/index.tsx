@@ -41,7 +41,7 @@ export default function WelcomeScreen() {
       <TouchableOpacity className="flex-1" activeOpacity={0.8}>
         {/* Full-Screen Gradient Background */}
         <LinearGradient
-          colors={["#FFB95E", "#ED8F03"]}
+          colors={["#FFB98E", "#FFBF09"]}
           style={{
             position: "absolute",
             inset: 0,
@@ -58,7 +58,7 @@ export default function WelcomeScreen() {
               style={{ opacity: fadeAnim }}
               className="text-white text-7xl font-extrabold tracking-wide"
             >
-              Oddyseez
+              MITM
             </Animated.Text>
             <Animated.Text
               style={{ opacity: fadeAnim }}
