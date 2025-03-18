@@ -1,5 +1,5 @@
 {
-  "name": "test",
+  "name": "mitm",
   "main": "expo-router/entry",
   "packageManager": "pnpm@9.12.0",
   "version": "1.0.0",
