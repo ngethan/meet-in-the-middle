@@ -85,40 +85,6 @@ export default function AuthScreen() {
       return;
     }
 
-    // // ✅ Step 2: Wait for user to confirm email
-    // const checkEmailVerified = async () => {
-    //   let attempts = 0;
-    //   const interval = setInterval(async () => {
-    //     if (attempts >= 10) {
-    //       clearInterval(interval);
-    //       setLoading(false);
-    //       return;
-    //     }
-
-    //     const { data: userData, error: userError } =
-    //       await supabase.auth.getUser();
-    //     if (userError) {
-    //       clearInterval(interval);
-    //       setLoading(false);
-    //       return;
-    //     }
-
-    //     if (userData?.user?.email_confirmed_at) {
-    //       clearInterval(interval);
-
-    //       // ✅ Step 3: Insert user into DB after verification
-    //       await supabase
-    //         .from("users")
-    //         .insert([{ id: userData.user.id, email, fullName: fullName }]);
-
-    //       setLoading(false);
-    //       router.replace("/(tabs)/home");
-    //     }
-    //     attempts++;
-    //   }, 500000);
-    // };
-
-    // checkEmailVerified();
     router.push("/(tabs)/home");
   }
 

@@ -452,7 +452,7 @@ export default function ChatScreen() {
   return (
     <View className="flex-1 bg-gray-100">
       {/* 📌 Header */}
-      <View className="flex-row justify-between items-center px-6 py-16 bg-orange-500 shadow-lg border-b border-gray-200">
+      <View className="flex-row justify-between items-center px-6 py-16 bg-orange-400 shadow-lg border-b border-gray-200">
         {selectedChat && (
           <TouchableOpacity
             onPress={() => {
@@ -705,7 +705,7 @@ export default function ChatScreen() {
           </View>
         </View>
       </Modal>
-      {/* 📌 Loading Animation */}
+
       <LoadingOverlay
         visible={isLoading}
         type="dots"
