@@ -29,6 +29,7 @@ import {
 import LoadingOverlay from "../loadingoverlay";
 import DropDownPicker from "react-native-dropdown-picker";
 import { LocationProvider, useLocationTypes } from "@/context/LocationProvider";
+import DateTimePicker from "@react-native-community/datetimepicker";
 
 // // Sample some categories
 // const typeMappings: Record<string, { label: string; value: string }> = {
@@ -79,6 +80,9 @@ export default function TripDetailsScreen() {
   const [isPreferenceModalVisible, setPreferenceModalVisible] = useState(false);
   const [openDropdown, setOpenDropdown] = useState(false);
   const [allPreferences, setAllPreferences] = useState([]);
+  const [newStartDate, setNewStartDate] = useState(null);
+  const [newEndDate, setNewEndDate] = useState(null);
+  const [isDateModalVisible, setIsDateModalVisible] = useState(false);
 
   const GOOGLE_MAPS_API_KEY = process.env.EXPO_PUBLIC_API_KEY;
   useEffect(() => {
@@ -193,16 +197,50 @@ export default function TripDetailsScreen() {
 
     if (!error) {
       setTrip(data);
-      setBestLocation({
-        bestLatitude: data.bestLatitude,
-        bestLongitude: data.bestLongitude,
-        bestAddress: data.bestAddress,
-        bestPlaceId: data.bestPlaceId,
-        bestPhotos: data.bestPhotos,
-      });
-      fetchParticipants();
+      setNewStartDate(new Date(data.startDate));
+      setNewEndDate(new Date(data.endDate));
     }
   }
+
+  /** 📌 Save updated dates */
+  const saveUpdatedDates = async () => {
+    if (!newStartDate || !newEndDate) {
+      Alert.alert("Error", "Please select valid start and end dates.");
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from("trips")
+        .update({
+          startDate: newStartDate.toISOString(),
+          endDate: newEndDate.toISOString(),
+        })
+        .eq("id", tripId);
+
+      if (!error) {
+        Alert.alert("Success", "Trip dates updated successfully!");
+        fetchTripDetails(); // Refresh trip details
+        setIsDateModalVisible(false); // Close modal
+      } else {
+        Alert.alert("Error", "Failed to update trip dates.");
+      }
+    } catch (error) {
+      console.error("Error updating trip dates:", error);
+      Alert.alert("Error", "Something went wrong.");
+    }
+  };
+
+  /** 📌 Handle date change */
+  const handleDateChange = (event, selectedDate, isStart) => {
+    if (selectedDate) {
+      if (isStart) {
+        setNewStartDate(selectedDate);
+      } else {
+        setNewEndDate(selectedDate);
+      }
+    }
+  };
 
   /** 📌 Fetch participants along with starting locations */
   async function fetchParticipants() {
@@ -751,14 +789,28 @@ export default function TripDetailsScreen() {
 
           {/* 📌 Trip Details */}
           <View className="p-6 bg-white rounded-lg shadow-md mx-4 mt-4">
-            <Text className="text-xl font-semibold text-gray-900">📅 When</Text>
-            <Text className="text-base text-gray-600 mt-1">
-              {trip?.startDate
-                ? moment(trip.startDate).format("MM/DD/YYYY - hh:mm A") +
-                  " to " +
-                  moment(trip.endDate).format("MM/DD/YYYY - hh:mm A")
-                : "Loading..."}
-            </Text>
+            <View className="flex-row justify-between items-center">
+              <Text className="text-xl font-semibold text-gray-900">
+                📅 When
+              </Text>
+              <TouchableOpacity onPress={() => setIsDateModalVisible(true)}>
+                <FontAwesome name="edit" size={20} color="orange" />
+              </TouchableOpacity>
+            </View>
+
+            {/* Start Date */}
+            <View className="flex-row justify-between items-center mt-4">
+              <Text className="text-base text-gray-600">
+                Start: {moment(newStartDate).format("MM/DD/YYYY - hh:mm A")}
+              </Text>
+            </View>
+
+            {/* End Date */}
+            <View className="flex-row justify-between items-center mt-4">
+              <Text className="text-base text-gray-600">
+                End: {moment(newEndDate).format("MM/DD/YYYY - hh:mm A")}
+              </Text>
+            </View>
 
             {/* 📌 Participants */}
             <Text className="text-lg font-semibold mt-4">Participants:</Text>
@@ -777,6 +829,63 @@ export default function TripDetailsScreen() {
               )}
             </View>
           </View>
+
+          {/* 📌 Date Editing Modal */}
+          <Modal visible={isDateModalVisible} transparent animationType="slide">
+            <View className="flex-1 justify-center items-center bg-black/50">
+              <View className="bg-white w-[85%] rounded-2xl p-6 shadow-xl">
+                <Text className="text-2xl font-bold text-gray-900 mb-4 text-center">
+                  Edit Trip Dates
+                </Text>
+
+                {/* Start Date Picker */}
+                <Text className="text-lg font-semibold mb-2">
+                  Start Date & Time
+                </Text>
+                <DateTimePicker
+                  value={newStartDate || new Date()}
+                  mode="datetime"
+                  display="default"
+                  onChange={(event, selectedDate) =>
+                    handleDateChange(event, selectedDate, true)
+                  }
+                />
+
+                {/* End Date Picker */}
+                <Text className="text-lg font-semibold mt-4 mb-2">
+                  End Date & Time
+                </Text>
+                <DateTimePicker
+                  value={newEndDate || new Date()}
+                  mode="datetime"
+                  display="default"
+                  onChange={(event, selectedDate) =>
+                    handleDateChange(event, selectedDate, false)
+                  }
+                />
+
+                {/* Save & Cancel Buttons */}
+                <View className="flex-row justify-between mt-6">
+                  <TouchableOpacity
+                    className="bg-orange-500 py-3 w-[48%] rounded-xl shadow-lg"
+                    onPress={saveUpdatedDates}
+                  >
+                    <Text className="text-white font-bold text-center text-lg">
+                      Save
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    className="bg-gray-300 py-3 w-[48%] rounded-xl"
+                    onPress={() => setIsDateModalVisible(false)}
+                  >
+                    <Text className="text-gray-800 font-bold text-center text-lg">
+                      Cancel
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </View>
+          </Modal>
 
           {/* 📌 List of Participants */}
           {/* <Text className="text-lg font-bold text-gray-900 px-6 mt-4">Trip Participants</Text>
