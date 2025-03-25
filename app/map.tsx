@@ -14,6 +14,15 @@ import { useRouter } from "expo-router";
 
 const GOOGLE_MAPS_API_KEY = process.env.EXPO_PUBLIC_API_KEY;
 const travelModes = ["driving", "walking", "bicycling", "transit"];
+const routeColors = [
+  "purple",
+  "orange",
+  "purple",
+  "green",
+  "pink",
+  "blue",
+  "yellow",
+];
 const polyline = require("@mapbox/polyline");
 
 export default function MapScreen() {
@@ -148,18 +157,18 @@ export default function MapScreen() {
               latitude: participant.latitude,
               longitude: participant.longitude,
             }}
-            title={participant.full_name}
-            pinColor="blue"
+            title={participant.fullName}
+            pinColor={routeColors[index % routeColors.length]}
           />
         ))}
 
-        {/* Draw Multiple Routes */}
+        {/* Draw Multiple Routes with Different Colors */}
         {routes.map((route, index) => (
           <Polyline
             key={index}
             coordinates={route}
             strokeWidth={4}
-            strokeColor="blue"
+            strokeColor={routeColors[index % routeColors.length]} // Assign a unique color
           />
         ))}
       </MapView>
