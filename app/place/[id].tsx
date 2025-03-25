@@ -6,18 +6,23 @@ import {
   StyleSheet,
   Dimensions,
   ActivityIndicator,
+  TextInput,
   ScrollView,
   TouchableOpacity,
   Alert,
   Modal,
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
+// import { Snackbar } from 'react-native-paper';
 import Carousel from "react-native-reanimated-carousel";
 import axios from "axios";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
 import { useAuth } from "@/context/AuthProvider";
 import { supabase } from "@/lib/supabase";
 import LoadingOverlay from "../loadingoverlay";
+import moment from "moment";
+import DateTimePicker from "@react-native-community/datetimepicker";
+
 const { width, height } = Dimensions.get("window"); // Get screen dimensions
 
 const GOOGLE_MAPS_API_KEY = process.env.EXPO_PUBLIC_API_KEY;
@@ -32,11 +37,15 @@ const randomUUID = () =>
 export default function PlaceScreen() {
   const { id } = useLocalSearchParams(); // Get place ID from URL params
   const [place, setPlace] = useState<{
+    id: string;
     title: string;
     description: string;
     images: string[];
     types: [];
     reviews: [];
+    latitude: string;
+    longitude: string;
+    address: string;
   } | null>(null);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
@@ -46,6 +55,13 @@ export default function PlaceScreen() {
   const [selectedChat, setSelectedChat] = useState(null);
   const [chats, setChats] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [visible, setVisible] = useState(false);
+  const [tripModalVisible, setTripModalVisible] = useState(false);
+  const [startDate, setStartDate] = useState(new Date());
+  const [endDate, setEndDate] = useState(new Date());
+  const [showStartPicker, setShowStartPicker] = useState(false);
+  const [showEndPicker, setShowEndPicker] = useState(false);
+  const onToggleSnackBar = () => setVisible(!visible);
 
   useEffect(() => {
     const fetchPlaceDetails = async () => {
@@ -58,7 +74,7 @@ export default function PlaceScreen() {
             params: {
               place_id: id,
               key: GOOGLE_MAPS_API_KEY,
-              fields: "name,formatted_address,photos,type,reviews",
+              fields: "name,formatted_address,photos,type,review,geometry",
             },
           },
         );
@@ -73,11 +89,15 @@ export default function PlaceScreen() {
               )
           : ["https://via.placeholder.com/400"];
         setPlace({
+          id: Array.isArray(id) ? id[0] : id,
           title: data.name,
           description: data.formatted_address || "No description available.",
           images: imageUrls,
           types: data.types,
           reviews: data.reviews,
+          latitude: data.geometry.location.lat,
+          longitude: data.geometry.location.lng,
+          address: data.formatted_address,
         });
       } catch (error) {
         console.error("Error fetching place details:", error);
@@ -90,7 +110,7 @@ export default function PlaceScreen() {
   }, [id]);
 
   async function fetchChats() {
-    setIsLoading(true);
+    setIsModalVisible(true);
     try {
       // ✅ Step 1: Get all chat groups where the user is a member
       const { data: userChats, error: userChatsError } = await supabase
@@ -120,7 +140,44 @@ export default function PlaceScreen() {
         .in("id", chatIds)
         .order("lastDate", { ascending: false });
 
-      setChats(chatsData || []);
+      // Fetch participants' names
+      const chatsWithParticipants = await Promise.all(
+        chatsData.map(async (chat: any) => {
+          const { data: participants, error: participantsError } =
+            await supabase
+              .from("conversationParticipants")
+              .select("userId")
+              .eq("conversationId", chat.id);
+
+          if (participantsError) {
+            throw new Error(
+              `Error fetching participants: ${participantsError.message}`,
+            );
+          }
+
+          const participantsNames = await Promise.all(
+            participants.map(async (participant: any) => {
+              const { data: userData, error: userError } = await supabase
+                .from("users")
+                .select("fullName")
+                .eq("id", participant.userId)
+                .single();
+
+              if (userError) {
+                throw new Error(
+                  `Error fetching user data: ${userError.message}`,
+                );
+              }
+
+              return userData.fullName;
+            }),
+          );
+
+          return { ...chat, participants: participantsNames };
+        }),
+      );
+
+      setChats(chatsWithParticipants || []);
 
       if (chatsError) {
         throw new Error(
@@ -132,41 +189,44 @@ export default function PlaceScreen() {
     }
   }
 
+  const handleDateChange = (event, selectedDate, isStart) => {
+    if (selectedDate) {
+      if (isStart) {
+        setStartDate(selectedDate);
+        setShowStartPicker(false);
+      } else {
+        setEndDate(selectedDate);
+        setShowEndPicker(false);
+      }
+    }
+  };
+
   // Handle creating a trip at this location
   const handleCreateTrip = async () => {
-    console.log("place is", place);
-    setNewTripName(place.title);
-    console.log("Creating trip at:", newTripName);
-    if (!newTripName.trim()) {
+    setIsLoading(true);
+    if (!place.title.trim()) {
       return Alert.alert("Error", "Trip name required.");
     }
+    console.log("Selected Chat:", selectedChat);
 
     const newTripId = randomUUID();
-    const { data: chatData, error: chatError } = await supabase
-      .from("conversationParticipants")
-      .select("conversationId")
-      .eq("userId", user.id);
 
-    if (chatError || !chatData || chatData.length === 0) {
-      return Alert.alert("Error", "No chats found.");
-    }
-
-    const chatIds = chatData.map((item) => item.conversationId);
-    if (!selectedChat) {
-      return Alert.alert("Error", "Please select a chat.");
-    }
-
-    // Insert new trip
+    // // Insert new trip
     const { error } = await supabase.from("trips").insert([
       {
         id: newTripId,
-        conversationId: selectedChat.id,
+        conversationId: selectedChat?.id,
         creatorId: user.id,
         name: newTripName,
         createdAt: new Date().toISOString(),
-        location: place.title,
-        latitude: 37.7749, // For simplicity, hardcoded; change as needed
-        longitude: -122.4194, // Hardcoded for San Francisco
+        bestLocation: place?.title,
+        bestLatitude: place?.latitude,
+        bestPlaceId: place?.id,
+        bestLongitude: place?.longitude,
+        bestAddress: place?.address,
+        bestPhotos: place?.images,
+        startDate: startDate.toISOString(),
+        endDate: endDate.toISOString(),
       },
     ]);
 
@@ -174,7 +234,7 @@ export default function PlaceScreen() {
     const { data: members, error: membersError } = await supabase
       .from("conversationParticipants")
       .select("userId")
-      .eq("conversationId", selectedChat.id);
+      .eq("conversationId", selectedChat?.id);
 
     if (membersError || !members || members.length === 0) {
       return Alert.alert("Error", "No users found in this chat.");
@@ -199,6 +259,7 @@ export default function PlaceScreen() {
 
     setNewTripName("");
     setIsModalVisible(false);
+    setIsLoading(false);
     Alert.alert("Success", "Trip created successfully!");
   };
 
@@ -260,7 +321,6 @@ export default function PlaceScreen() {
             className="bg-orange-500 py-3 mx-5 rounded-xl shadow-lg flex items-center justify-center mt-6"
             onPress={() => {
               fetchChats();
-              setIsModalVisible(true);
             }}
           >
             <Text className="text-white font-semibold text-lg">
@@ -320,27 +380,36 @@ export default function PlaceScreen() {
             </Text>
 
             {/* List of Chats */}
-            {chats.map((chat) => (
-              <TouchableOpacity
-                key={chat.id}
-                className="bg-gray-100 p-3 rounded-lg mb-2 shadow-sm"
-                onPress={() => {
-                  setSelectedChat(chat);
-                  handleCreateTrip();
-                  setIsModalVisible(false);
-                }}
-              >
-                <Text className="text-lg font-semibold text-gray-800">
-                  {chat.chatName}
-                </Text>
-              </TouchableOpacity>
-            ))}
+            <ScrollView
+              className="max-h-[400px] space-y-4" // Set a fixed height and space between each chat box
+              contentContainerStyle={{ paddingBottom: 20 }}
+            >
+              {chats.map((chat) => (
+                <TouchableOpacity
+                  key={chat.id}
+                  className="bg-gray-100 p-3 rounded-lg mb-2 shadow-sm"
+                  onPress={() => {
+                    // handleCreateTrip(chat);
+                    setSelectedChat(chat);
+                    setIsModalVisible(false);
+                    setTripModalVisible(true);
+                  }}
+                >
+                  <Text className="text-lg font-bold text-red-800">
+                    {chat.chatName}
+                  </Text>
+                  {/* List Participants */}
+                  <Text className="text-sm text-gray-600">
+                    Participants: {chat.participants.join(", ")}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
 
             <TouchableOpacity
               className="mt-5 bg-gray-300 py-3 w-full rounded-xl"
               onPress={() => {
                 setIsModalVisible(false);
-                console.log(isModalVisible);
               }}
             >
               <Text className="text-gray-800 font-bold text-center text-lg">
@@ -350,11 +419,121 @@ export default function PlaceScreen() {
           </View>
         </View>
       </Modal>
+
+      <Modal visible={tripModalVisible} transparent animationType="slide">
+        <View className="flex-1 justify-center items-center bg-black/50 backdrop-blur-md">
+          <View className="bg-white w-[85%] rounded-2xl p-6 shadow-xl">
+            <Text className="text-2xl font-bold text-gray-900 mb-4 text-center">
+              Create a New Trip
+            </Text>
+
+            {/* Trip Name Input */}
+            <Text className="text-lg font-semibold mb-2">Trip Name</Text>
+            <TextInput
+              className="w-full p-4 bg-gray-100 rounded-xl text-lg border border-gray-300 mb-4"
+              placeholder="Enter Trip Name"
+              value={newTripName}
+              onChangeText={setNewTripName}
+            />
+
+            {/* 📌 Start Date Picker */}
+            <Text className="text-lg font-semibold mb-2">
+              Start Date & Time
+            </Text>
+            <TouchableOpacity
+              className="p-4 bg-gray-100 rounded-xl border border-gray-300 mb-4"
+              onPress={() => setShowStartPicker(true)}
+            >
+              <Text className="text-gray-700 text-lg">
+                {moment(startDate).format("MMMM DD, YYYY - hh:mm A")}
+              </Text>
+            </TouchableOpacity>
+            {showStartPicker && (
+              <DateTimePicker
+                value={startDate}
+                mode="datetime" // ✅ Shows both date & time
+                display="default"
+                onChange={(event, selectedDate) =>
+                  handleDateChange(event, selectedDate, true)
+                }
+              />
+            )}
+
+            {/* 📌 End Date Picker */}
+            <Text className="text-lg font-semibold mb-2">End Date & Time</Text>
+            <TouchableOpacity
+              className="p-4 bg-gray-100 rounded-xl border border-gray-300 mb-4"
+              onPress={() => setShowEndPicker(true)}
+            >
+              <Text className="text-gray-700 text-lg">
+                {moment(endDate).format("MMMM DD, YYYY - hh:mm A")}
+              </Text>
+            </TouchableOpacity>
+            {showEndPicker && (
+              <DateTimePicker
+                value={endDate}
+                mode="datetime" // ✅ Shows both date & time
+                display="default"
+                onChange={(event, selectedDate) =>
+                  handleDateChange(event, selectedDate, false)
+                }
+              />
+            )}
+
+            {/* Create & Cancel Buttons */}
+            <View className="flex-row justify-between mt-6">
+              <TouchableOpacity
+                className="bg-orange-500 py-3 w-[48%] rounded-xl shadow-lg"
+                onPress={handleCreateTrip}
+              >
+                <Text className="text-white font-bold text-center text-lg">
+                  Create
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                className="bg-gray-300 py-3 w-[48%] rounded-xl"
+                onPress={() => {
+                  setTripModalVisible(false);
+                  setNewTripName("");
+                }}
+              >
+                <Text className="text-gray-800 font-bold text-center text-lg">
+                  Cancel
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
       <LoadingOverlay
         visible={isLoading}
         type="dots"
-        message="Loading Messages..."
+        message="Creating Trip..."
       />
+      {/* 
+      <Snackbar
+        visible={visible}
+        onDismiss={onToggleSnackBar}
+        duration={Snackbar.DURATION_SHORT} // Snackbar duration
+        action={{
+          label: 'Undo',
+          onPress: () => {
+            // Handle undo action
+            console.log('Undo action');
+            setVisible(false);
+          },
+        }}
+        style={{
+          backgroundColor: '#4CAF50', // Customize the background color
+          borderRadius: 10, // Rounded corners
+          padding: 10, // Add padding
+        }}
+      >
+        <Text style={{ color: 'white', fontWeight: 'bold' }}>
+          Trip created successfully!
+        </Text>
+      </Snackbar> */}
     </View>
   );
 }

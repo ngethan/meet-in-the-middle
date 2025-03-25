@@ -33,10 +33,7 @@ export const LocationProvider: React.FC<{ children: ReactNode }> = ({
       }
 
       let location = await Location.getCurrentPositionAsync({});
-      console.log(location);
       const { latitude, longitude } = location.coords;
-      console.log(location);
-
       const response = await axios.get(
         `https://maps.googleapis.com/maps/api/place/nearbysearch/json`,
         {

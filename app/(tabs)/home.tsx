@@ -5,6 +5,9 @@ import {
   TouchableOpacity,
   FlatList,
   Image,
+  StyleSheet,
+  Modal,
+  TextInput,
   Dimensions,
 } from "react-native";
 import { FontAwesome } from "@expo/vector-icons";
@@ -13,6 +16,12 @@ import NavigationDrawer from "../../components/Drawer";
 import axios from "axios";
 import { useAuth } from "@/context/AuthProvider";
 import * as Location from "expo-location";
+import LoadingOverlay from "../loadingoverlay";
+
+import {
+  PanGestureHandler,
+  GestureHandlerRootView,
+} from "react-native-gesture-handler";
 
 const { width, height } = Dimensions.get("window");
 
@@ -27,26 +36,22 @@ export default function HomeScreen() {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [address, setAddress] = useState(null);
   const [places, setPlaces] = useState([]);
-  const [_, setLoading] = useState(true);
+  const [searchResults, setSearchResults] = useState([]);
+  const [searchText, setSearchText] = useState("");
+  const [isOverlayVisible, setOverlayVisible] = useState(false);
+  const [loading, setLoading] = useState(true);
+
   const { user, signOut } = useAuth();
   const router = useRouter();
 
-  const fetchPopularDestinations = async () => {
-    let { status } = await Location.requestForegroundPermissionsAsync();
-    if (status !== "granted") {
-      alert("Permission Denied");
-      return;
-    }
-
-    let location = await Location.getCurrentPositionAsync({});
-    const { latitude, longitude } = location.coords;
-
+  const fetchPopularDestinations = async (lat: number, lon: number) => {
+    setLoading(true);
     try {
       const response = await axios.get(
         `https://maps.googleapis.com/maps/api/place/nearbysearch/json`,
         {
           params: {
-            location: `${latitude},${longitude}`,
+            location: `${lat},${lon}`,
             radius: RADIUS,
             type: "tourist_attraction",
             key: GOOGLE_MAPS_API_KEY,
@@ -68,18 +73,9 @@ export default function HomeScreen() {
         types: place.types,
       }));
 
-      const uniqueTypes = [...new Set(results.flatMap((dest) => dest.types))];
-
-      console.log(uniqueTypes);
-
       results = results.map((place) => ({
         ...place,
-        distance: calculateDistance(
-          latitude,
-          longitude,
-          place.latitude,
-          place.longitude,
-        ),
+        distance: calculateDistance(lat, lon, place.latitude, place.longitude),
       }));
 
       results.sort((a, b) => a.distance - b.distance);
@@ -89,6 +85,7 @@ export default function HomeScreen() {
     } finally {
       setLoading(false);
     }
+    setLoading(false);
   };
 
   const toggleDrawer = () => {
@@ -102,6 +99,7 @@ export default function HomeScreen() {
         setErrorMsg("Permission to access location was denied");
         return;
       }
+
       try {
         let location = await Location.getCurrentPositionAsync({});
         setLocation(location);
@@ -110,6 +108,11 @@ export default function HomeScreen() {
         if (geoAddress.length > 0) {
           setAddress(geoAddress[0]);
         }
+
+        fetchPopularDestinations(
+          location.coords.latitude,
+          location.coords.longitude,
+        );
       } catch (error) {
         console.error("Error fetching location:", error);
         setErrorMsg("Error fetching location");
@@ -117,8 +120,51 @@ export default function HomeScreen() {
     }
 
     getCurrentLocation();
-    fetchPopularDestinations();
   }, []);
+
+  // Search new starting location
+  const searchLocation = async (text) => {
+    try {
+      const response = await axios.get(
+        `https://maps.googleapis.com/maps/api/place/autocomplete/json`,
+        {
+          params: {
+            input: text,
+            key: GOOGLE_MAPS_API_KEY,
+            types: "establishment|geocode",
+          },
+        },
+      );
+      setSearchResults(response.data.predictions);
+    } catch (error) {
+      console.error("Error fetching places:", error);
+    }
+  };
+
+  const changeLocation = async (location) => {
+    let response = await axios.get(
+      `https://maps.googleapis.com/maps/api/place/details/json`,
+      {
+        params: {
+          place_id: location.place_id,
+          key: GOOGLE_MAPS_API_KEY,
+        },
+      },
+    );
+    let lat = response.data.result.geometry.location.lat;
+    let lon = response.data.result.geometry.location.lng;
+
+    let geoAddress = await Location.reverseGeocodeAsync({
+      latitude: lat,
+      longitude: lon,
+    });
+
+    if (geoAddress.length > 0) {
+      setAddress(geoAddress[0]);
+    }
+
+    fetchPopularDestinations(lat, lon);
+  };
 
   let currentLocation = "Waiting...";
   if (errorMsg) {
@@ -154,9 +200,18 @@ export default function HomeScreen() {
         <TouchableOpacity onPress={toggleDrawer}>
           <FontAwesome name="bars" size={32} color="black" />
         </TouchableOpacity>
-        <Text className="text-lg font-bold text-gray-800">
-          {currentLocation}
-        </Text>
+
+        {/* Clickable Location Text */}
+        <TouchableOpacity
+          onPress={() => {
+            setOverlayVisible(true);
+          }}
+        >
+          <Text className="text-lg font-bold text-gray-800">
+            {currentLocation}
+          </Text>
+        </TouchableOpacity>
+
         <TouchableOpacity onPress={() => router.push("/profile")}>
           <FontAwesome name="user-circle" size={32} color="black" />
         </TouchableOpacity>
@@ -188,12 +243,61 @@ export default function HomeScreen() {
         contentContainerStyle={{ paddingBottom: 100 }}
         showsVerticalScrollIndicator={false}
       />
-
-      {/* Floating Action Button */}
-      {/* <TouchableOpacity className="absolute bottom-40 right-6 bg-orange-500 w-16 h-16 rounded-full justify-center items-center shadow-lg">
-        <FontAwesome name="plus" size={30} color="white" />
-      </TouchableOpacity> */}
       <NavigationDrawer onClose={toggleDrawer} isOpen={drawerOpen} />
+
+      {/* 📌 Overlay Modal for Searching Locations */}
+      <GestureHandlerRootView className="flex-1">
+        <Modal animationType="slide" visible={isOverlayVisible} transparent>
+          <View className="flex-1 justify-end bg-black/50">
+            <PanGestureHandler
+              onGestureEvent={(e) => {
+                if (e.nativeEvent.translationY > 100) setOverlayVisible(false);
+              }}
+            >
+              <View className="w-full h-[70%] bg-white rounded-t-2xl p-6 shadow-xl">
+                {/* Drag Indicator */}
+                <View className="w-14 h-1 bg-gray-300 rounded-full mx-auto mb-4" />
+
+                {/* Search Input */}
+                <TextInput
+                  className="border border-gray-300 p-3 rounded-lg bg-gray-100"
+                  placeholder="Search for location..."
+                  value={searchText}
+                  onChangeText={(text) => {
+                    setSearchText(text);
+                    searchLocation(text);
+                  }}
+                />
+
+                {/* Search Results List */}
+                <FlatList
+                  data={searchResults}
+                  keyExtractor={(item) => item.place_id}
+                  renderItem={({ item }) => (
+                    <TouchableOpacity
+                      onPress={() => {
+                        setOverlayVisible(false); // Close modal after selection
+                        changeLocation(item);
+                        setSearchText(""); // Clear search text
+                      }}
+                      className="p-4 border-b border-gray-200"
+                    >
+                      <Text className="text-gray-800">{item.description}</Text>
+                    </TouchableOpacity>
+                  )}
+                />
+              </View>
+            </PanGestureHandler>
+          </View>
+        </Modal>
+      </GestureHandlerRootView>
+
+      {/* 📌 Loading Animation */}
+      <LoadingOverlay
+        visible={loading}
+        type="dots"
+        message="Loading popular destinations..."
+      />
     </View>
   );
 }

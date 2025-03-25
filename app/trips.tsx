@@ -16,13 +16,8 @@ import DateTimePicker from "@react-native-community/datetimepicker";
 import { supabase } from "@/lib/supabase";
 import { FontAwesome } from "@expo/vector-icons";
 import * as Location from "expo-location";
-import MapView, { Marker } from "react-native-maps";
 import { useAuth } from "@/context/AuthProvider";
-import { db } from "../database/client";
-import { trips } from "../database/schema";
-
 import moment from "moment";
-import { Button } from "@rneui/base";
 
 const { width } = Dimensions.get("window");
 
