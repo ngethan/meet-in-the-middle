@@ -79,6 +79,9 @@ export default function TripDetailsScreen() {
   const [isPreferenceModalVisible, setPreferenceModalVisible] = useState(false);
   const [openDropdown, setOpenDropdown] = useState(false);
   const [allPreferences, setAllPreferences] = useState([]);
+  const [locationSelectionModalVisible, setLocationSelectionModalVisible] =
+    useState(false);
+  const [topLocations, setTopLocations] = useState([]);
 
   const GOOGLE_MAPS_API_KEY = process.env.EXPO_PUBLIC_API_KEY;
   useEffect(() => {
@@ -151,7 +154,6 @@ export default function TripDetailsScreen() {
         if (streetNumber?.trim() && street?.trim()) {
           const locationName = `${streetNumber} ${street}, ${city}, ${region}, ${country}, ${postalCode}`;
         }
-
         // ✅ Save the selected participant's new location in Supabase
         const { error } = await supabase
           .from("tripParticipants")
@@ -305,6 +307,119 @@ export default function TripDetailsScreen() {
   // 7️⃣ Save to Supabase & update UI
 
   /** 📍 Find Best Destination (Now Interactive & Real-time) */
+  // async function handleFindBestLocation() {
+  //   try {
+  //     setLoading(true);
+  //     setSearchStatus("Finding best location...");
+  //     Animated.timing(progress, {
+  //       toValue: 0, // Reset progress bar
+  //       duration: 300,
+  //       useNativeDriver: false,
+  //     }).start();
+
+  //     console.log("Finding best location...");
+  //     const participants = await fetchTripParticipants(tripId);
+
+  //     if (participants.length === 0) {
+  //       Alert.alert("Error", "No participants with valid locations.");
+  //       setLoading(false);
+  //       return;
+  //     }
+
+  //     setSearchStatus("Computing midpoint...");
+  //     const midpoint = computeMidpoint(participants);
+
+  //     setSearchStatus("Fetching nearby locations...");
+  //     const candidates = await fetchCandidateLocations(midpoint);
+
+  //     if (candidates.length === 0) {
+  //       Alert.alert(
+  //         "No Places Found",
+  //         "No suitable locations were found nearby.",
+  //       );
+  //       setLoading(false);
+  //       return;
+  //     }
+
+  //     setCandidateResults(candidates); // Show candidates live in the UI
+
+  //     let bestLocation = null;
+  //     let bestTravelTime = Infinity;
+
+  //     for (let i = 0; i < candidates.length; i++) {
+  //       const candidate = candidates[i];
+  //       Animated.timing(progress, {
+  //         toValue: (i + 1) / candidates.length,
+  //         duration: 500,
+  //         useNativeDriver: false,
+  //       }).start();
+
+  //       const totalTime = await fetchTravelTimes(participants, candidate);
+  //       const preferenceScore = calculatePreferenceScore(
+  //         participants,
+  //         candidate,
+  //       );
+
+  //       const adjustedScore = totalTime - preferenceScore * 100;
+  //       console.log(
+  //         "Candidate Location:",
+  //         candidate.name,
+  //         "Total time:",
+  //         totalTime,
+  //         "Preference score:",
+  //         preferenceScore,
+  //         "Total Score",
+  //         adjustedScore,
+  //       );
+
+  //       if (adjustedScore < bestTravelTime) {
+  //         bestTravelTime = adjustedScore;
+  //         bestLocation = candidate;
+  //       }
+  //     }
+
+  //     if (!bestLocation) {
+  //       Alert.alert("Error", "Could not determine the best location.");
+  //       setLoading(false);
+  //       return;
+  //     }
+
+  //     const photos_uri = extractPhotoUrls(bestLocation.photos);
+  //     bestLocation.photos = photos_uri;
+  //     setBestLocation(bestLocation);
+
+  //     // Update database with the best location
+  //     const { error } = await supabase
+  //       .from("trips")
+  //       .update({
+  //         bestLocation: bestLocation.name,
+  //         bestLatitude: bestLocation.latitude,
+  //         bestLongitude: bestLocation.longitude,
+  //         bestAddress: bestLocation.address,
+  //         bestPlaceId: bestLocation.place_id,
+  //         bestPhotos: photos_uri,
+  //       })
+  //       .eq("id", tripId);
+
+  //     if (!error) {
+  //       // Alert.alert("Success", `Best location found: ${bestLocation.name}`);
+
+  //       Toast.show({
+  //         type: "Success",
+  //         text1: "Success",
+  //         text2: `Best location found: ${bestLocation.name}`,
+  //       });
+
+  //       fetchTripDetails(); // Refresh data
+  //     }
+  //   } catch (error) {
+  //     console.error("Error finding best location:", error);
+  //     Alert.alert("Error", "Something went wrong.");
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // }
+
   async function handleFindBestLocation() {
     try {
       setLoading(true);
@@ -315,7 +430,6 @@ export default function TripDetailsScreen() {
         useNativeDriver: false,
       }).start();
 
-      console.log("Finding best location...");
       const participants = await fetchTripParticipants(tripId);
 
       if (participants.length === 0) {
@@ -341,16 +455,13 @@ export default function TripDetailsScreen() {
 
       setCandidateResults(candidates); // Show candidates live in the UI
 
+      let locations = [];
       let bestLocation = null;
       let bestTravelTime = Infinity;
 
+      // Sort and filter top 5 locations based on best travel time
       for (let i = 0; i < candidates.length; i++) {
         const candidate = candidates[i];
-        Animated.timing(progress, {
-          toValue: (i + 1) / candidates.length,
-          duration: 500,
-          useNativeDriver: false,
-        }).start();
 
         const totalTime = await fetchTravelTimes(participants, candidate);
         const preferenceScore = calculatePreferenceScore(
@@ -359,63 +470,60 @@ export default function TripDetailsScreen() {
         );
 
         const adjustedScore = totalTime - preferenceScore * 100;
-        console.log(
-          "Candidate Location:",
-          candidate.name,
-          "Total time:",
-          totalTime,
-          "Preference score:",
-          preferenceScore,
-          "Total Score",
-          adjustedScore,
-        );
 
         if (adjustedScore < bestTravelTime) {
           bestTravelTime = adjustedScore;
           bestLocation = candidate;
         }
+
+        // Collect the top 5 best locations
+        if (i < 10) {
+          locations.push(candidate);
+        }
       }
-
-      if (!bestLocation) {
-        Alert.alert("Error", "Could not determine the best location.");
-        setLoading(false);
-        return;
-      }
-
-      const photos_uri = extractPhotoUrls(bestLocation.photos);
-      bestLocation.photos = photos_uri;
-      setBestLocation(bestLocation);
-
-      // Update database with the best location
-      const { error } = await supabase
-        .from("trips")
-        .update({
-          bestLocation: bestLocation.name,
-          bestLatitude: bestLocation.latitude,
-          bestLongitude: bestLocation.longitude,
-          bestAddress: bestLocation.address,
-          bestPlaceId: bestLocation.place_id,
-          bestPhotos: photos_uri,
-        })
-        .eq("id", tripId);
-
-      if (!error) {
-        // Alert.alert("Success", `Best location found: ${bestLocation.name}`);
-
-        Toast.show({
-          type: "Success",
-          text1: "Success",
-          text2: `Best location found: ${bestLocation.name}`,
-        });
-
-        fetchTripDetails(); // Refresh data
-      }
+      // Show the modal with the top locations
+      setLocationSelectionModalVisible(true);
+      setTopLocations(locations); // Set the top locations to be displayed in the modal
     } catch (error) {
       console.error("Error finding best location:", error);
       Alert.alert("Error", "Something went wrong.");
     } finally {
       setLoading(false);
     }
+  }
+
+  async function updateBestLocation(location) {
+    if (!location) {
+      Alert.alert("Error", "Could not determine the best location.");
+      setLoading(false);
+      return;
+    }
+
+    const photos_uri = extractPhotoUrls(location.photos);
+    location.photos = photos_uri;
+    setBestLocation(bestLocation);
+
+    // Update database with the best location
+    const { error } = await supabase
+      .from("trips")
+      .update({
+        bestLocation: location.name,
+        bestLatitude: location.latitude,
+        bestLongitude: location.longitude,
+        bestAddress: location.address,
+        bestPlaceId: location.place_id,
+        bestPhotos: photos_uri,
+      })
+      .eq("id", tripId);
+
+    if (!error) {
+      Toast.show({
+        type: "Success",
+        text1: "Success",
+        text2: `Best location found: ${location.name}`,
+      });
+    }
+    fetchTripDetails(); // Refresh data
   }
 
   function calculatePreferenceScore(participants, candidate) {
@@ -489,14 +597,14 @@ export default function TripDetailsScreen() {
         }),
       );
 
-      const filteredResults = detailedResults.filter((place) => {
-        if (!place.opening_hours) return false;
-        return isOpenDuringTrip(
-          place.opening_hours,
-          trip?.startDate,
-          trip?.endDate,
-        );
-      });
+      // const filteredResults = detailedResults.filter((place) => {
+      //   if (!place.opening_hours) return false;
+      //   return isOpenDuringTrip(
+      //     place.opening_hours,
+      //     trip?.startDate,
+      //     trip?.endDate,
+      //   );
+      // });
 
       return detailedResults;
     } catch (error) {
@@ -524,11 +632,28 @@ export default function TripDetailsScreen() {
     }
   }
 
+  // Helper function to get the day of the week (0 - Sunday, 6 - Saturday)
+  function getDayOfWeek(dateString) {
+    const date = new Date(dateString);
+    return date.getDay(); // Returns a number: 0 for Sunday, 1 for Monday, etc.
+  }
+
+  // Helper function to get the time in minutes from a Date object
+  function getTimeInMinutes(dateString) {
+    const date = new Date(dateString);
+    return date.getHours() * 60 + date.getMinutes();
+  }
+
   function isOpenDuringTrip(openingHours, tripStart, tripEnd) {
     if (!tripStart || !tripEnd) return false;
 
-    const tripStartDate = new Date(tripStart);
-    const tripEndDate = new Date(tripEnd);
+    // Parse the trip start and end dates
+    const tripStartDay = getDayOfWeek(tripStart); // Get the day of the week (0-6)
+    const tripEndDay = getDayOfWeek(tripEnd); // Get the day of the week (0-6)
+
+    // Get the time in minutes for trip start and end
+    const tripStartTime = getTimeInMinutes(tripStart);
+    const tripEndTime = getTimeInMinutes(tripEnd);
 
     return openingHours.some((period) => {
       const openEntry = openingHours.find(
@@ -543,9 +668,16 @@ export default function TripDetailsScreen() {
       const openTime = parseTime(openEntry.open.time);
       const closeTime = parseTime(closeEntry.close.time);
 
+      // console.log("tripStartDay:", tripStartDay, "tripEndDay:", tripEndDay);
+      // console.log("period.open.day:", period.open.day, "period.close.day:", period.close.day);
+      // console.log("Open Time:", openTime, "Close Time:", closeTime);
+      // console.log("Trip Start:", tripStartTime, "Trip End:", tripEndTime);
+      // console.log("Is Open?", period.open.day >= tripStartDay && period.close.day <= tripEndDay && openTime <= tripStartTime && closeTime >= tripEndTime);
       return (
-        isDayWithinTripRange(period.open.day, tripStartDate, tripEndDate) &&
-        isTimeWithinTripRange(openTime, closeTime, tripStartDate, tripEndDate)
+        period.open.day >= tripStartDay &&
+        period.close.day <= tripEndDay &&
+        openTime <= tripStartTime &&
+        closeTime >= tripEndTime
       );
     });
   }
@@ -555,22 +687,6 @@ export default function TripDetailsScreen() {
     const hours = parseInt(timeString.substring(0, 2), 10);
     const minutes = parseInt(timeString.substring(2, 4), 10);
     return hours * 60 + minutes;
-  }
-
-  function isDayWithinTripRange(day, startDate, endDate) {
-    const startDay = startDate.getDay(); // 0 = Sunday, 6 = Saturday
-    const endDay = endDate.getDay();
-
-    return day >= startDay && day <= endDay;
-  }
-
-  function isTimeWithinTripRange(openTime, closeTime, startDate, endDate) {
-    const startTime = startDate.getHours() * 60 + startDate.getMinutes();
-    const endTime = endDate.getHours() * 60 + endDate.getMinutes();
-
-    // find if the date starting the trip is what day, then compare.
-
-    return openTime <= startTime && closeTime >= endTime;
   }
 
   async function fetchTravelTimes(participants, candidate) {
@@ -817,8 +933,12 @@ export default function TripDetailsScreen() {
                   : "Click to choose preferences"}
               </Text>
               <Text className="text-sm text-gray-500">
-                Starting Location:{" "}
-                {item.startingLocation || "Click to choose preferences"}
+                {/* Starting Location: {item ? `${item?.startingLocation}` : "Click to choose preferences"} */}
+                {item.startingLocation ? (
+                  <Text>{`Location: ${item.startingLocation}`}</Text>
+                ) : (
+                  <Text>Loading location...</Text> // Or a fallback message
+                )}
               </Text>
             </TouchableOpacity>
           ))}
@@ -859,16 +979,14 @@ export default function TripDetailsScreen() {
             onPress={handleFindBestLocation}
             disabled={loading}
           >
-            {loading ? (
-              <ActivityIndicator size="small" color="#ffffff" />
-            ) : (
+            {
               <>
                 <FontAwesome name="location-arrow" size={20} color="gray" />
                 <Text className="text-gray-800 font-bold ml-2">
                   Get Best Location
                 </Text>
               </>
-            )}
+            }
           </TouchableOpacity>
         </View>
 
@@ -1010,6 +1128,107 @@ export default function TripDetailsScreen() {
             </View>
           </View>
         </Modal>
+
+        <Modal
+          visible={locationSelectionModalVisible}
+          transparent
+          animationType="slide"
+        >
+          <View className="flex-1 justify-center items-center bg-black/50">
+            <View className="max-h-[500px] bg-white w-[90%] rounded-3xl p-6 shadow-2xl">
+              <Text className="text-2xl font-bold text-gray-900 mb-4 text-center">
+                Choose a Destination
+              </Text>
+              <FlatList
+                data={topLocations}
+                keyExtractor={(item) => item.place_id}
+                renderItem={({ item }) => {
+                  const isOpen = isOpenDuringTrip(
+                    item.opening_hours,
+                    trip?.startDate,
+                    trip?.endDate,
+                  );
+                  // console.log("Is the place open during the trip: ", isOpen? "Yes" : "No");
+                  return (
+                    <TouchableOpacity
+                      onPress={() => {
+                        updateBestLocation(item);
+                        setLocationSelectionModalVisible(false);
+                      }}
+                      className="bg-white rounded-lg shadow-lg mx-4 my-2 p-4 flex-row items-start space-x-4 border border-gray-200"
+                    >
+                      {/* Location Image */}
+                      <Image
+                        source={{
+                          uri:
+                            item.photos && item.photos[0]
+                              ? `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photoreference=${item.photos[0].photo_reference}&key=${GOOGLE_MAPS_API_KEY}`
+                              : "https://via.placeholder.com/150",
+                        }}
+                        className="w-20 h-20 rounded-lg"
+                        style={{ resizeMode: "cover" }}
+                      />
+
+                      <View className="flex-1">
+                        {/* Location Name */}
+                        <Text className="text-lg font-semibold text-gray-900 mx-3">
+                          {item.name}
+                        </Text>
+
+                        {/* Location Address */}
+                        <Text className="text-sm text-gray-600 mt-1 mx-3">
+                          {item.address}
+                        </Text>
+
+                        {/* Location Types */}
+                        <View className="flex-row flex-wrap mt-2 mx-3">
+                          {item.types.map((type, index) => (
+                            <Text
+                              key={index}
+                              className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full mr-2 mb-2"
+                            >
+                              {type}
+                            </Text>
+                          ))}
+                        </View>
+
+                        {/* Opening Hours */}
+                        <View className="flex-row flex-wrap mt-2 mx-4">
+                          {isOpen ? (
+                            <Text className="text-xs text-green-600 font-medium">
+                              Open During trip time
+                            </Text>
+                          ) : (
+                            <Text className="text-xs text-red-600 font-medium">
+                              Not Open During trip time
+                            </Text>
+                          )}
+                        </View>
+                      </View>
+
+                      {/* Right Arrow Icon */}
+                      <FontAwesome
+                        name="chevron-right"
+                        size={20}
+                        color="#aaa"
+                      />
+                    </TouchableOpacity>
+                  );
+                }}
+              />
+
+              <TouchableOpacity
+                className="mt-6 bg-gray-300 py-3 w-full rounded-xl"
+                onPress={() => setLocationSelectionModalVisible(false)}
+              >
+                <Text className="text-center text-lg font-bold text-gray-800">
+                  Cancel
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
+
         {/* 📌 Overlay Modal for Searching Locations */}
         <Modal animationType="slide" visible={isOverlayVisible} transparent>
           <View className="flex-1 justify-end bg-black/50">
@@ -1036,7 +1255,7 @@ export default function TripDetailsScreen() {
                 {/* Search Results List */}
                 <FlatList
                   data={searchResults}
-                  keyExtractor={(item) => item.placeId}
+                  keyExtractor={(item) => item.place_id}
                   renderItem={({ item }) => (
                     <TouchableOpacity
                       onPress={() => {

@@ -207,7 +207,6 @@ export default function PlaceScreen() {
     if (!place.title.trim()) {
       return Alert.alert("Error", "Trip name required.");
     }
-    console.log("Selected Chat:", selectedChat);
 
     const newTripId = randomUUID();
 
@@ -381,7 +380,7 @@ export default function PlaceScreen() {
 
             {/* List of Chats */}
             <ScrollView
-              className="max-h-[400px] space-y-4" // Set a fixed height and space between each chat box
+              className="max-h-[500px] space-y-4" // Set a fixed height and space between each chat box
               contentContainerStyle={{ paddingBottom: 20 }}
             >
               {chats.map((chat) => (

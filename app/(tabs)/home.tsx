@@ -45,7 +45,6 @@ export default function HomeScreen() {
   const router = useRouter();
 
   const fetchPopularDestinations = async (lat: number, lon: number) => {
-    setLoading(true);
     try {
       const response = await axios.get(
         `https://maps.googleapis.com/maps/api/place/nearbysearch/json`,
@@ -85,7 +84,6 @@ export default function HomeScreen() {
     } finally {
       setLoading(false);
     }
-    setLoading(false);
   };
 
   const toggleDrawer = () => {
@@ -217,7 +215,7 @@ export default function HomeScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* Trip List */}
+      {/* Place List */}
       <FlatList
         data={places}
         keyExtractor={(item: any) => item.id}
@@ -276,9 +274,9 @@ export default function HomeScreen() {
                   renderItem={({ item }) => (
                     <TouchableOpacity
                       onPress={() => {
-                        setOverlayVisible(false); // Close modal after selection
                         changeLocation(item);
                         setSearchText(""); // Clear search text
+                        setOverlayVisible(false); // Close modal after selection
                       }}
                       className="p-4 border-b border-gray-200"
                     >
