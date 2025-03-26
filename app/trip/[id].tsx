@@ -188,6 +188,7 @@ export default function TripDetailsScreen() {
   };
 
   /** 📌 Fetch trip details */
+  /** 📌 Fetch trip details */
   async function fetchTripDetails() {
     const { data, error } = await supabase
       .from("trips")
@@ -197,8 +198,10 @@ export default function TripDetailsScreen() {
 
     if (!error) {
       setTrip(data);
-      setNewStartDate(new Date(data.startDate));
-      setNewEndDate(new Date(data.endDate));
+
+      // Parse the stored date strings back into Date objects
+      setNewStartDate(moment(data.startDate, "YYYY-MM-DDTHH:mm").toDate());
+      setNewEndDate(moment(data.endDate, "YYYY-MM-DDTHH:mm").toDate());
     }
   }
 
@@ -210,11 +213,15 @@ export default function TripDetailsScreen() {
     }
 
     try {
+      // Format the dates as local time strings (e.g., "2025-03-25T08:00")
+      const startDateString = moment(newStartDate).format("YYYY-MM-DDTHH:mm");
+      const endDateString = moment(newEndDate).format("YYYY-MM-DDTHH:mm");
+
       const { error } = await supabase
         .from("trips")
         .update({
-          startDate: newStartDate.toISOString(),
-          endDate: newEndDate.toISOString(),
+          startDate: startDateString, // Save as local time string
+          endDate: endDateString, // Save as local time string
         })
         .eq("id", tripId);
 
