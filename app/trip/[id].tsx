@@ -188,7 +188,6 @@ export default function TripDetailsScreen() {
   };
 
   /** 📌 Fetch trip details */
-  /** 📌 Fetch trip details */
   async function fetchTripDetails() {
     const { data, error } = await supabase
       .from("trips")
@@ -198,10 +197,16 @@ export default function TripDetailsScreen() {
 
     if (!error) {
       setTrip(data);
-
-      // Parse the stored date strings back into Date objects
       setNewStartDate(moment(data.startDate, "YYYY-MM-DDTHH:mm").toDate());
       setNewEndDate(moment(data.endDate, "YYYY-MM-DDTHH:mm").toDate());
+      setBestLocation({
+        bestLatitude: data.bestLatitude,
+        bestLongitude: data.bestLongitude,
+        bestAddress: data.bestAddress,
+        bestPlaceId: data.bestPlaceId,
+        bestPhotos: data.bestPhotos,
+      });
+      fetchParticipants();
     }
   }
 
