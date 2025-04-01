@@ -492,7 +492,7 @@ export default function ChatScreen() {
           keyExtractor={(item) => item.id}
           renderItem={({ item }) => (
             <TouchableOpacity
-              className="bg-orange-100 rounded-xl p-6 mx-4 my-4 shadow-md border border-gray-200 hover:shadow-lg"
+              className="bg-orange-100 rounded-xl p-12 mx-4 my-4 shadow-md border border-gray-200 hover:shadow-lg"
               onPress={() => handleSelectChat(item)}
             >
               <Text className="text-lg font-semibold text-gray-900">
