@@ -1,5 +1,3 @@
-// Search bar and filter for popular destinations
-
 import React, { useState, useEffect } from "react";
 import {
   View,
@@ -10,127 +8,93 @@ import {
   StyleSheet,
   Modal,
   TextInput,
-  ScrollView,
   Dimensions,
 } from "react-native";
-import { Picker } from "@react-native-picker/picker";
 import { FontAwesome } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import NavigationDrawer from "../../components/Drawer";
 import axios from "axios";
-import { SearchBar } from "@rneui/themed";
 import { useAuth } from "@/context/AuthProvider";
 import * as Location from "expo-location";
 import LoadingOverlay from "../loadingoverlay";
-import { LocationProvider, useLocationTypes } from "@/context/LocationProvider";
-import BouncyCheckbox from "react-native-bouncy-checkbox";
-
 import {
   PanGestureHandler,
   GestureHandlerRootView,
 } from "react-native-gesture-handler";
+import moment from "moment";
 
 const { width, height } = Dimensions.get("window");
 
 const GOOGLE_MAPS_API_KEY = process.env.EXPO_PUBLIC_API_KEY;
 const RADIUS = 50000;
 
-export default function HomeScreen() {
+export default function EventDashBoard() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [location, setLocation] = useState<Location.LocationObject | null>(
     null,
   );
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [address, setAddress] = useState(null);
-  const [places, setPlaces] = useState([]);
+  const [events, setEvents] = useState([]);
   const [searchResults, setSearchResults] = useState([]);
   const [searchText, setSearchText] = useState("");
-  const [searchLocationText, setSearchLocationText] = useState("");
   const [isOverlayVisible, setOverlayVisible] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
 
   const { user, signOut } = useAuth();
   const router = useRouter();
 
-  const preferenceOptions = useLocationTypes().types; // Get location types from context
+  const TICKETMASTER_API_KEY = "e48QyQe8dYPBlcGspizf6dtnvpGfDojV"; // Replace with your Ticketmaster API key
 
-  const [selectedPreferences, setSelectedPreferences] = useState<string[]>([]);
-  const [isPreferenceOpen, setIsPreferenceOpen] = useState(false);
-
-  // Toggle the visibility of the preferences dropdown
-  const togglePreferenceDropdown = () => {
-    setIsPreferenceOpen(!isPreferenceOpen);
-  };
-
-  // Handle selection and deselection of preferences
-  const handlePreferenceChange = (preference: string) => {
-    setSelectedPreferences((prevPreferences) => {
-      if (prevPreferences.includes(preference)) {
-        // Remove preference if already selected
-        return prevPreferences.filter((item) => item !== preference);
-      } else {
-        // Add preference if not already selected
-        return [...prevPreferences, preference];
-      }
-    });
-  };
-
-  const fetchPopularDestinations = async (
-    lat: number,
-    lon: number,
-    query: string,
-    selectedPreferences: string[],
-  ) => {
+  const fetchEvents = async (lat: number, lon: number) => {
+    console.log("latitude: ", lat, "longitude: ", lon);
     try {
+      // setLoading(true); // Show loading overlay
       const response = await axios.get(
-        `https://maps.googleapis.com/maps/api/place/nearbysearch/json`,
+        `https://app.ticketmaster.com/discovery/v2/events.json`,
         {
           params: {
-            location: `${lat},${lon}`,
-            radius: RADIUS,
-            type: "tourist_attraction",
-            key: GOOGLE_MAPS_API_KEY,
+            latlong: `${lat},${lon}`,
+            radius: RADIUS / 1000, // Convert radius to kilometers (Ticketmaster uses km)
+            unit: "km", // Unit of distance
+            apikey: TICKETMASTER_API_KEY,
           },
         },
       );
 
-      let results = response.data.results.map((place) => ({
-        id: place.place_id,
-        title: place.name,
-        description: place.vicinity || "Popular place nearby.",
-        image: place.photos
-          ? `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photoreference=${place.photos[0].photo_reference}&key=${GOOGLE_MAPS_API_KEY}`
-          : "https://via.placeholder.com/400",
-        latitude: place.geometry.location.lat,
-        longitude: place.geometry.location.lng,
-        icon: place.icon,
-        reviews: place.reviews,
-        types: place.types,
+      // Mapping data from Ticketmaster response to a similar format as your existing places data
+      const events = response.data._embedded.events.map((event) => ({
+        id: event.id,
+        title: event.name,
+        description:
+          event.classifications[0]?.segment.name || "No description available",
+        image: event.images[0]?.url || "https://via.placeholder.com/400",
+        latitude: event._embedded.venues[0]?.location.latitude || 0,
+        longitude: event._embedded.venues[0]?.location.longitude || 0,
+        venue: event._embedded.venues[0]?.name || "Unknown Venue",
+        date: event.dates.start.localDate,
+        time: event.dates.start.localTime,
+        eventTime: moment(
+          `${event.dates.start.localDate} ${event.dates.start.localTime}`,
+          "YYYY-MM-DD HH:mm",
+        ), // Convert to moment object
       }));
 
-      // Real-time filtering based on search text
-      if (query) {
-        results = results.filter((place) =>
-          place.title.toLowerCase().includes(query.toLowerCase()),
-        );
-      }
-      if (selectedPreferences.length > 0) {
-        results = results.filter((place) =>
-          place.types.some((type) => selectedPreferences.includes(type)),
-        );
-      }
+      // Sort events by time
+      const sortedEvents = events.sort((a, b) => a.eventTime - b.eventTime);
 
-      results = results.map((place) => ({
-        ...place,
-        distance: calculateDistance(lat, lon, place.latitude, place.longitude),
-      }));
-
-      results.sort((a, b) => a.distance - b.distance);
-      setPlaces(results);
+      setEvents(sortedEvents); // Set sorted events
     } catch (error) {
-      console.error("Error fetching places:", error);
+      console.log(error);
+      if (error == "[TypeError: Cannot read property 'events' of undefined]")
+        console.error("There are no events fetched at this location");
+      else
+        console.error(
+          "There are no events fetched at this location, please choose somewhere in America",
+        );
     } finally {
-      setLoading(false);
+      setOverlayVisible(false); // Close overlay modal
+      setLoading(false); // Hide loading overlay
     }
   };
 
@@ -155,12 +119,8 @@ export default function HomeScreen() {
           setAddress(geoAddress[0]);
         }
 
-        fetchPopularDestinations(
-          location.coords.latitude,
-          location.coords.longitude,
-          searchText,
-          selectedPreferences,
-        );
+        // Fetch events around the location
+        fetchEvents(location.coords.latitude, location.coords.longitude);
       } catch (error) {
         console.error("Error fetching location:", error);
         setErrorMsg("Error fetching location");
@@ -168,7 +128,7 @@ export default function HomeScreen() {
     }
 
     getCurrentLocation();
-  }, [searchText]); // Now fetches on searchText change to make the update real-time
+  }, []);
 
   // Search new starting location
   const searchLocation = async (text) => {
@@ -185,7 +145,10 @@ export default function HomeScreen() {
       );
       setSearchResults(response.data.predictions);
     } catch (error) {
-      console.error("Error fetching places:", error);
+      setOverlayVisible(false); // Close overlay modal
+      setLoading(false); // Hide loading overlay
+      console.log(1);
+      console.error("Error fetching events:", error);
     }
   };
 
@@ -211,7 +174,7 @@ export default function HomeScreen() {
       setAddress(geoAddress[0]);
     }
 
-    fetchPopularDestinations(lat, lon, searchText, selectedPreferences);
+    fetchEvents(lat, lon);
   };
 
   let currentLocation = "Waiting...";
@@ -265,71 +228,21 @@ export default function HomeScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* Search Bar and Filter */}
-      <SearchBar
-        placeholder="Search for a place..."
-        value={searchText}
-        onChangeText={(text) => {
-          setSearchText(text); // Update search text
-          fetchPopularDestinations(
-            location?.coords.latitude,
-            location?.coords.longitude,
-            text,
-            selectedPreferences,
-          ); // Fetch places in real-time
-        }}
-        containerStyle={{
-          backgroundColor: "#ffffff", // White background for clean look
-          marginBottom: 20, // Add bottom spacing
-          shadowColor: "#000", // Subtle shadow for elevation
-          shadowOffset: { width: 0, height: 4 }, // Shadow angle
-          shadowOpacity: 0.1, // Light opacity for subtle effect
-          shadowRadius: 5, // Soft shadow edges
-          elevation: 5, // Android shadow effect
-        }}
-        inputContainerStyle={{
-          backgroundColor: "#f4f4f4", // Light grey background for input area
-          borderRadius: 10, // Round corners for the input field
-          paddingHorizontal: 12, // Add padding for better alignment
-          paddingVertical: 8, // Add padding for a comfortable input area
-        }}
-        inputStyle={{
-          color: "#333", // Dark grey text for readability
-          fontSize: 16, // Slightly larger font size for better accessibility
-        }}
-        placeholderTextColor="#999" // Light grey for placeholder text
-        leftIconContainerStyle={{
-          paddingLeft: 10, // Add padding around the left icon
-        }}
-        rightIconContainerStyle={{
-          paddingRight: 10, // Add padding around the right icon
-        }}
-        round={true} // Keep the search bar rounded
-        lightTheme // Use light theme for better visual contrast
-        showCancel={false} // Hide cancel button if not needed
-      />
-
-      {/* Place List */}
+      {/* Event List */}
       <FlatList
-        data={places}
+        data={events}
         keyExtractor={(item: any) => item.id}
         renderItem={({ item }) => (
           <TouchableOpacity
             className="mt-5 bg-white rounded-2xl shadow-lg overflow-hidden mx-5"
             activeOpacity={0.8}
-            onPress={() => router.push(`/place/${item.id}`)}
+            onPress={() => router.push(`/event/${item.id}`)} // Route to event detail page
           >
             <Image source={{ uri: item.image }} className="w-full h-80" />
             <View className="absolute bottom-0 left-0 right-0 bg-black/50 p-4">
               <Text className="text-white text-xl font-bold">{item.title}</Text>
-              <Text className="text-yellow-300 font-semibold">
-                {item.distance} km
-              </Text>
+              <Text className="text-yellow-300 font-semibold">{item.date}</Text>
             </View>
-            <Image
-              source={{ uri: item.icon }}
-              className="w-12 h-12 absolute top-3 right-3"
-            />
           </TouchableOpacity>
         )}
         contentContainerStyle={{ paddingBottom: 100 }}
@@ -354,9 +267,9 @@ export default function HomeScreen() {
                 <TextInput
                   className="border border-gray-300 p-3 rounded-lg bg-gray-100"
                   placeholder="Search for location..."
-                  value={searchLocationText}
+                  value={searchText}
                   onChangeText={(text) => {
-                    setSearchLocationText(text);
+                    setSearchText(text);
                     searchLocation(text);
                   }}
                 />
@@ -369,7 +282,7 @@ export default function HomeScreen() {
                     <TouchableOpacity
                       onPress={() => {
                         changeLocation(item);
-                        setSearchLocationText(""); // Clear search text
+                        setSearchText(""); // Clear search text
                         setOverlayVisible(false); // Close modal after selection
                       }}
                       className="p-4 border-b border-gray-200"
@@ -388,7 +301,7 @@ export default function HomeScreen() {
       <LoadingOverlay
         visible={loading}
         type="dots"
-        message="Loading popular destinations..."
+        message="Loading Events..."
       />
     </View>
   );

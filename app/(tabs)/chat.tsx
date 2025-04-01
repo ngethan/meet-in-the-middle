@@ -714,5 +714,3 @@ export default function ChatScreen() {
     </View>
   );
 }
-
-export default ChatScreen; // Ensure the default export

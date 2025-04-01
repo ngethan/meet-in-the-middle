@@ -296,130 +296,6 @@ export default function TripDetailsScreen() {
 
   if (!trip) return null;
 
-  // 📍 Find Best Destination
-
-  // 1️⃣ User presses "Find Best Location" button
-  // 2️⃣ Fetch all participants’ locations
-  // 3️⃣ Compute midpoint
-  // 4️⃣ Get real meeting places (Google Places API)
-  // 5️⃣ Compute travel times (Google Distance Matrix API)
-  // 6️⃣ Select the best location (minimum total travel time)
-  // 7️⃣ Save to Supabase & update UI
-
-  /** 📍 Find Best Destination (Now Interactive & Real-time) */
-  // async function handleFindBestLocation() {
-  //   try {
-  //     setLoading(true);
-  //     setSearchStatus("Finding best location...");
-  //     Animated.timing(progress, {
-  //       toValue: 0, // Reset progress bar
-  //       duration: 300,
-  //       useNativeDriver: false,
-  //     }).start();
-
-  //     console.log("Finding best location...");
-  //     const participants = await fetchTripParticipants(tripId);
-
-  //     if (participants.length === 0) {
-  //       Alert.alert("Error", "No participants with valid locations.");
-  //       setLoading(false);
-  //       return;
-  //     }
-
-  //     setSearchStatus("Computing midpoint...");
-  //     const midpoint = computeMidpoint(participants);
-
-  //     setSearchStatus("Fetching nearby locations...");
-  //     const candidates = await fetchCandidateLocations(midpoint);
-
-  //     if (candidates.length === 0) {
-  //       Alert.alert(
-  //         "No Places Found",
-  //         "No suitable locations were found nearby.",
-  //       );
-  //       setLoading(false);
-  //       return;
-  //     }
-
-  //     setCandidateResults(candidates); // Show candidates live in the UI
-
-  //     let bestLocation = null;
-  //     let bestTravelTime = Infinity;
-
-  //     for (let i = 0; i < candidates.length; i++) {
-  //       const candidate = candidates[i];
-  //       Animated.timing(progress, {
-  //         toValue: (i + 1) / candidates.length,
-  //         duration: 500,
-  //         useNativeDriver: false,
-  //       }).start();
-
-  //       const totalTime = await fetchTravelTimes(participants, candidate);
-  //       const preferenceScore = calculatePreferenceScore(
-  //         participants,
-  //         candidate,
-  //       );
-
-  //       const adjustedScore = totalTime - preferenceScore * 100;
-  //       console.log(
-  //         "Candidate Location:",
-  //         candidate.name,
-  //         "Total time:",
-  //         totalTime,
-  //         "Preference score:",
-  //         preferenceScore,
-  //         "Total Score",
-  //         adjustedScore,
-  //       );
-
-  //       if (adjustedScore < bestTravelTime) {
-  //         bestTravelTime = adjustedScore;
-  //         bestLocation = candidate;
-  //       }
-  //     }
-
-  //     if (!bestLocation) {
-  //       Alert.alert("Error", "Could not determine the best location.");
-  //       setLoading(false);
-  //       return;
-  //     }
-
-  //     const photos_uri = extractPhotoUrls(bestLocation.photos);
-  //     bestLocation.photos = photos_uri;
-  //     setBestLocation(bestLocation);
-
-  //     // Update database with the best location
-  //     const { error } = await supabase
-  //       .from("trips")
-  //       .update({
-  //         bestLocation: bestLocation.name,
-  //         bestLatitude: bestLocation.latitude,
-  //         bestLongitude: bestLocation.longitude,
-  //         bestAddress: bestLocation.address,
-  //         bestPlaceId: bestLocation.place_id,
-  //         bestPhotos: photos_uri,
-  //       })
-  //       .eq("id", tripId);
-
-  //     if (!error) {
-  //       // Alert.alert("Success", `Best location found: ${bestLocation.name}`);
-
-  //       Toast.show({
-  //         type: "Success",
-  //         text1: "Success",
-  //         text2: `Best location found: ${bestLocation.name}`,
-  //       });
-
-  //       fetchTripDetails(); // Refresh data
-  //     }
-  //   } catch (error) {
-  //     console.error("Error finding best location:", error);
-  //     Alert.alert("Error", "Something went wrong.");
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // }
-
   async function handleFindBestLocation() {
     try {
       setLoading(true);
@@ -645,7 +521,7 @@ export default function TripDetailsScreen() {
   }
 
   function isOpenDuringTrip(openingHours, tripStart, tripEnd) {
-    if (!tripStart || !tripEnd) return false;
+    if (!tripStart || !tripEnd || !openingHours) return false;
 
     // Parse the trip start and end dates
     const tripStartDay = getDayOfWeek(tripStart); // Get the day of the week (0-6)
@@ -808,7 +684,14 @@ export default function TripDetailsScreen() {
         console.error("Error fetching starting location:", error);
         return null;
       }
-      const googleMapsUrl = `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(data.startingLocation)}&destination=${encodeURIComponent(trip.bestLocation)}&travelmode=driving`;
+
+      console.log(
+        "Starting location:",
+        data.startingLocation,
+        "Destination: ",
+        trip.bestAddress,
+      );
+      const googleMapsUrl = `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(data.startingLocation)}&destination=${encodeURIComponent(trip.bestAddress)}&travelmode=driving`;
       Linking.openURL(googleMapsUrl);
       setLoading(false);
     } catch (error) {
@@ -847,9 +730,21 @@ export default function TripDetailsScreen() {
             }}
             className="w-[95%] h-[50%] rounded-lg mx-4 mt-4"
           />
-          <Text className="text-2xl font-bold my-4 p-4">
+          <Text className="text-4xl font-bold p-6">
             {trip?.bestLocation || "Unknown Destination"}
           </Text>
+
+          {/* 📌 Destination types */}
+          <View className="flex-row flex-wrap px-6">
+            {trip?.bestTypes?.map((type) => (
+              <Text
+                key={type}
+                className="bg-gray-200 px-4 py-2 rounded-full m-1"
+              >
+                {type}
+              </Text>
+            ))}
+          </View>
 
           {/* <View>
             {bestLocation.opening_hours && bestLocation.opening_hours.length > 0 ? (

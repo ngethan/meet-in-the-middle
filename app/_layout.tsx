@@ -53,6 +53,10 @@ export default function RootLayout() {
             name="place/[id]"
             options={{ title: "Place Details" }}
           />
+          <Stack.Screen
+            name="event/[id]"
+            options={{ title: "Event Details" }}
+          />
           <Stack.Screen name="trips" options={{ title: "Trips" }} />
           <Stack.Screen name="trip/[id]" options={{ title: "Trip Details" }} />
           <Stack.Screen name="profile" options={{ title: "Profile" }} />

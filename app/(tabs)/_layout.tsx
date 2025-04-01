@@ -1,5 +1,5 @@
 import { Tabs } from "expo-router";
-import { FontAwesome } from "@expo/vector-icons";
+import { FontAwesome, MaterialIcons } from "@expo/vector-icons";
 import { View } from "react-native";
 
 export default function TabsNavigator() {
@@ -47,6 +47,23 @@ export default function TabsNavigator() {
             >
               <FontAwesome
                 name="comments"
+                size={24}
+                color={focused ? "#fff" : "#333"}
+              />
+            </View>
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="eventdash"
+        options={{
+          headerShown: false,
+          tabBarIcon: ({ focused }: { focused: boolean }) => (
+            <View
+              className={`p-1 rounded-2xl ${focused ? "bg-yellow-400" : ""}`}
+            >
+              <MaterialIcons
+                name="event"
                 size={24}
                 color={focused ? "#fff" : "#333"}
               />
