@@ -4,21 +4,16 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  SafeAreaView,
   KeyboardAvoidingView,
   Platform,
   AppState,
   Alert,
-  ActivityIndicator,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { supabase } from "../lib/supabase";
 import * as AppleAuthentication from "expo-apple-authentication";
 import { LinearGradient } from "expo-linear-gradient";
-import { verifyInstallation } from "nativewind";
-import { useAuth } from "../context/AuthProvider";
 import LoadingOverlay from "./loadingoverlay";
-// import { db } from "../database/client";
 
 AppState.addEventListener("change", (state) => {
   if (state === "active") {
@@ -97,8 +92,6 @@ export default function AuthScreen() {
     else Alert.alert("Success", "Password reset email sent!");
     setLoading(false);
   }
-
-  verifyInstallation();
 
   return (
     <KeyboardAvoidingView
