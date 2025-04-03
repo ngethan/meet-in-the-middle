@@ -17,7 +17,17 @@ import Toast from "react-native-toast-message";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { supabase } from "@/lib/supabase";
 import MapView, { Marker } from "react-native-maps";
-import { FontAwesome } from "@expo/vector-icons";
+import {
+  ArrowLeft,
+  UserCircle,
+  Map,
+  Play,
+  Navigation2,
+  MapPin,
+  ChevronRight,
+  Search,
+  Plus,
+} from "lucide-react-native";
 import moment from "moment";
 import axios from "axios";
 import * as Location from "expo-location";
@@ -713,13 +723,13 @@ export default function TripDetailsScreen() {
           {/* 📌 Header */}
           <View className="flex-row justify-between items-center px-6 py-16 bg-white shadow-lg border-b border-gray-300">
             <TouchableOpacity onPress={() => router.back()} className="p-2">
-              <FontAwesome name="arrow-left" size={28} color="black" />
+              <ArrowLeft size={28} color="black" />
             </TouchableOpacity>
             <Text className="text-lg font-bold text-black">
               Trip: {trip?.name || "Loading..."}
             </Text>
             <TouchableOpacity>
-              <FontAwesome name="user-circle" size={28} color="black" />
+              <UserCircle size={28} color="black" />
             </TouchableOpacity>
           </View>
 
@@ -858,7 +868,7 @@ export default function TripDetailsScreen() {
               });
             }}
           >
-            <FontAwesome name="map" size={20} color="white" />
+            <Map size={20} color="white" />
             <Text className="text-white font-bold ml-2">Show Routes</Text>
           </TouchableOpacity>
 
@@ -866,7 +876,7 @@ export default function TripDetailsScreen() {
             className="bg-orange-300 px-6 py-3 rounded-full shadow-lg flex-row items-center"
             onPress={startTrip}
           >
-            <FontAwesome name="play" size={28} color="white" />
+            <Play size={28} color="white" />
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -876,7 +886,7 @@ export default function TripDetailsScreen() {
           >
             {
               <>
-                <FontAwesome name="location-arrow" size={20} color="gray" />
+                <Navigation2 size={20} color="gray" />
                 <Text className="text-gray-800 font-bold ml-2">
                   Get Best Location
                 </Text>
@@ -1102,11 +1112,7 @@ export default function TripDetailsScreen() {
                       </View>
 
                       {/* Right Arrow Icon */}
-                      <FontAwesome
-                        name="chevron-right"
-                        size={20}
-                        color="#aaa"
-                      />
+                      <ChevronRight size={20} color="#aaa" />
                     </TouchableOpacity>
                   );
                 }}

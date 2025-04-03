@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "../lib/supabase";
 import { View, Text, TouchableOpacity, ActivityIndicator } from "react-native";
-import { FontAwesome } from "@expo/vector-icons";
+import { ArrowLeft } from "lucide-react-native";
 import { Session } from "@supabase/supabase-js";
 import { useAuth } from "../context/AuthProvider";
 import * as Location from "expo-location";
@@ -69,7 +69,7 @@ export default function Account({ session }: { session: Session }) {
     <View className="flex-1 bg-white px-5 py-20">
       {/* Back Button */}
       <TouchableOpacity onPress={() => router.back()} className="p-3 top-30">
-        <FontAwesome name="arrow-left" size={32} color="black" />
+        <ArrowLeft size={32} color="black" />
       </TouchableOpacity>
 
       <Text className="text-2xl font-bold text-gray-900 text-center mb-6">

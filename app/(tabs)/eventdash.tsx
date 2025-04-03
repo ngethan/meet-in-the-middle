@@ -10,7 +10,13 @@ import {
   TextInput,
   Dimensions,
 } from "react-native";
-import { FontAwesome } from "@expo/vector-icons";
+import {
+  Menu,
+  MapPin,
+  UserCircle,
+  ArrowLeft,
+  ChevronDown,
+} from "lucide-react-native";
 import { useRouter } from "expo-router";
 import NavigationDrawer from "../../components/Drawer";
 import axios from "axios";
@@ -209,7 +215,7 @@ export default function EventDashBoard() {
       {/* Header */}
       <View className="flex-row justify-between items-center px-6 py-16 bg-orange-400 shadow-md">
         <TouchableOpacity onPress={toggleDrawer}>
-          <FontAwesome name="bars" size={32} color="black" />
+          <Menu size={32} color="black" />
         </TouchableOpacity>
 
         {/* Clickable Location Text */}
@@ -224,7 +230,7 @@ export default function EventDashBoard() {
         </TouchableOpacity>
 
         <TouchableOpacity onPress={() => router.push("/profile")}>
-          <FontAwesome name="user-circle" size={32} color="black" />
+          <UserCircle size={32} color="black" />
         </TouchableOpacity>
       </View>
 

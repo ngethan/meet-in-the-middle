@@ -1,6 +1,8 @@
 import { Tabs } from "expo-router";
-import { FontAwesome, MaterialIcons } from "@expo/vector-icons";
-import { View } from "react-native";
+import { Home, MessageSquare, Calendar } from "lucide-react-native";
+import { View, Dimensions } from "react-native";
+
+const { width } = Dimensions.get("window");
 
 export default function TabsNavigator() {
   return (
@@ -8,16 +10,20 @@ export default function TabsNavigator() {
       screenOptions={{
         tabBarShowLabel: false,
         tabBarStyle: {
-          backgroundColor: "#F5F5F5",
-          height: "12%",
-          borderTopLeftRadius: 25,
-          borderTopRightRadius: 25,
+          backgroundColor: "#3b82f6",
           position: "absolute",
-          left: 0,
-          right: 0,
-          bottom: 0,
-          elevation: 5,
+          height: 80,
+          paddingTop: 4,
+          borderTopWidth: 0,
         },
+        tabBarItemStyle: {
+          height: 64,
+          padding: 8,
+        },
+        tabBarIconStyle: {
+          marginTop: 0,
+        },
+        headerShown: false,
       }}
     >
       <Tabs.Screen
@@ -26,13 +32,9 @@ export default function TabsNavigator() {
           headerShown: false,
           tabBarIcon: ({ focused }: { focused: boolean }) => (
             <View
-              className={`p-1 rounded-2xl ${focused ? "bg-yellow-400" : ""}`}
+              className={`p-3 rounded-full ${focused ? "bg-white/20" : ""}`}
             >
-              <FontAwesome
-                name="home"
-                size={24}
-                color={focused ? "#fff" : "#333"}
-              />
+              <Home size={24} color="white" strokeWidth={2} />
             </View>
           ),
         }}
@@ -43,13 +45,9 @@ export default function TabsNavigator() {
           headerShown: false,
           tabBarIcon: ({ focused }: { focused: boolean }) => (
             <View
-              className={`p-1 rounded-2xl ${focused ? "bg-yellow-400" : ""}`}
+              className={`p-3 rounded-full ${focused ? "bg-white/20" : ""}`}
             >
-              <FontAwesome
-                name="comments"
-                size={24}
-                color={focused ? "#fff" : "#333"}
-              />
+              <MessageSquare size={24} color="white" strokeWidth={2} />
             </View>
           ),
         }}
@@ -60,13 +58,9 @@ export default function TabsNavigator() {
           headerShown: false,
           tabBarIcon: ({ focused }: { focused: boolean }) => (
             <View
-              className={`p-1 rounded-2xl ${focused ? "bg-yellow-400" : ""}`}
+              className={`p-3 rounded-full ${focused ? "bg-white/20" : ""}`}
             >
-              <MaterialIcons
-                name="event"
-                size={24}
-                color={focused ? "#fff" : "#333"}
-              />
+              <Calendar size={24} color="white" strokeWidth={2} />
             </View>
           ),
         }}

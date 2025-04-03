@@ -9,19 +9,17 @@ import {
   ActivityIndicator,
 } from "react-native";
 import axios from "axios";
-import { FontAwesome } from "@expo/vector-icons";
-import LoadingOverlay from "../loadingoverlay"; // Custom Loading component
+import { ArrowLeft, Ticket } from "lucide-react-native";
 import moment from "moment";
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { useLocalSearchParams } from "expo-router";
 
-const TICKETMASTER_API_KEY = "e48QyQe8dYPBlcGspizf6dtnvpGfDojV"; // Replace with your API key
+const TICKETMASTER_API_KEY = "e48QyQe8dYPBlcGspizf6dtnvpGfDojV";
 
 export default function EventDetail() {
-  const { id } = useLocalSearchParams(); // Get the event ID from the URL
+  const { id } = useLocalSearchParams();
   const [event, setEvent] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
-  // Fetch event details from Ticketmaster API
   const fetchEventDetails = async () => {
     try {
       const response = await axios.get(
@@ -53,9 +51,7 @@ export default function EventDetail() {
           ? "Age restrictions enforced"
           : "No age restrictions",
         sales: eventData.sales?.public.startDateTime
-          ? `Sales start at ${moment(
-              eventData.sales.public.startDateTime,
-            ).format("MMMM DD, YYYY - hh:mm A")}`
+          ? `Sales start at ${moment(eventData.sales.public.startDateTime).format("MMMM DD, YYYY - hh:mm A")}`
           : "No public sales info",
       };
       console.log("Event details:", eventDetails);
@@ -92,10 +88,8 @@ export default function EventDetail() {
 
   return (
     <ScrollView className="flex-1 bg-gray-100">
-      {/* Event Image */}
       <Image source={{ uri: event.image }} className="w-full h-[45vh]" />
 
-      {/* Event Title and Date */}
       <View className="px-5 py-4">
         <Text className="text-3xl font-bold text-gray-900">{event.title}</Text>
         <Text className="text-lg text-gray-700 mt-2">
@@ -103,7 +97,6 @@ export default function EventDetail() {
         </Text>
       </View>
 
-      {/* Venue Information */}
       <View className="bg-white px-5 py-4 rounded-xl mx-5 shadow-lg mt-4">
         <Text className="text-xl font-semibold text-gray-900">Venue</Text>
         <Text className="text-lg text-gray-700 mt-2">{event.venue}</Text>
@@ -113,13 +106,11 @@ export default function EventDetail() {
         </Text>
       </View>
 
-      {/* Promoter Information */}
       <View className="bg-white px-5 py-4 rounded-xl mx-5 shadow-lg mt-4">
         <Text className="text-xl font-semibold text-gray-900">Promoter</Text>
         <Text className="text-lg text-gray-700 mt-2">{event.promoter}</Text>
       </View>
 
-      {/* Age Restrictions */}
       <View className="bg-white px-5 py-4 rounded-xl mx-5 shadow-lg mt-4">
         <Text className="text-xl font-semibold text-gray-900">
           Age Restrictions
@@ -129,7 +120,6 @@ export default function EventDetail() {
         </Text>
       </View>
 
-      {/* Event Description */}
       <View className="px-5 py-4 mt-4 bg-white rounded-xl mx-5 shadow-lg">
         <Text className="text-xl font-semibold text-gray-900">
           Event Details
@@ -137,19 +127,11 @@ export default function EventDetail() {
         <Text className="text-lg text-gray-700 mt-2">{event.description}</Text>
       </View>
 
-      {/* Sales Info */}
       <View className="bg-white px-5 py-4 rounded-xl mx-5 shadow-lg mt-4">
         <Text className="text-xl font-semibold text-gray-900">Sales Info</Text>
         <Text className="text-lg text-gray-700 mt-2">{event.sales}</Text>
       </View>
 
-      {/* Accessibility Info */}
-      {/* <View className="bg-white px-5 py-4 rounded-xl mx-5 shadow-lg mt-4">
-        <Text className="text-xl font-semibold text-gray-900">Accessibility</Text>
-        <Text className="text-lg text-gray-700 mt-2">{event.accessibility}</Text>
-      </View> */}
-
-      {/* Seatmap Image */}
       {event.seatmap && (
         <View className="mt-4">
           <Image
@@ -160,13 +142,12 @@ export default function EventDetail() {
         </View>
       )}
 
-      {/* Buy Tickets Button */}
       <TouchableOpacity
         className="bg-yellow-500 py-3 mx-5 rounded-lg shadow-lg flex items-center justify-center mt-6"
         onPress={() => Linking.openURL(event.ticketUrl)}
       >
         <Text className="text-white font-semibold text-lg">Buy Tickets</Text>
-        <FontAwesome name="ticket" size={24} color="white" className="ml-2" />
+        <Ticket size={24} color="white" className="ml-2" />
       </TouchableOpacity>
     </ScrollView>
   );

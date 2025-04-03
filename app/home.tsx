@@ -15,11 +15,12 @@ import axios from "axios";
 import { useAuth } from "@/context/AuthProvider";
 
 import * as Location from "expo-location";
+import { Menu, UserCircle2Icon } from "lucide-react-native";
 
-const { width, height } = Dimensions.get("window"); // Get screen dimensions
+const { width, height } = Dimensions.get("window");
 
 const GOOGLE_MAPS_API_KEY = process.env.EXPO_PUBLIC_API_KEY;
-const RADIUS = 50000; // 50 km
+const RADIUS = 50000;
 
 export default function HomeScreen() {
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -152,25 +153,23 @@ export default function HomeScreen() {
         Math.sin(dLon / 2);
 
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    return (R * c).toFixed(1); // Distance in km
+    return (R * c).toFixed(1);
   };
 
   return (
     <View style={styles.container}>
       <NavigationDrawer onClose={toggleDrawer} isOpen={drawerOpen} />
 
-      {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={toggleDrawer}>
-          <FontAwesome name="bars" size={32} color="black" />
+          <Menu size={32} color="black" />
         </TouchableOpacity>
         <Text style={styles.title}> {currentLocation}</Text>
         <TouchableOpacity onPress={() => router.push("/profile")}>
-          <FontAwesome name="user-circle" size={32} color="black" />
+          <UserCircle2Icon strokeWidth={1.5} size={32} color="black" />
         </TouchableOpacity>
       </View>
 
-      {/* Trip List */}
       <FlatList
         data={places}
         keyExtractor={(item) => item.id}

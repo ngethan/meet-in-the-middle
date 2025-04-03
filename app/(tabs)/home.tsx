@@ -7,13 +7,10 @@ import {
   TouchableOpacity,
   FlatList,
   Image,
-  StyleSheet,
   Modal,
   TextInput,
-  ScrollView,
   Dimensions,
 } from "react-native";
-import { Picker } from "@react-native-picker/picker";
 import { FontAwesome } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import NavigationDrawer from "../../components/Drawer";
@@ -22,15 +19,13 @@ import { SearchBar } from "@rneui/themed";
 import { useAuth } from "@/context/AuthProvider";
 import * as Location from "expo-location";
 import LoadingOverlay from "../loadingoverlay";
-import { LocationProvider, useLocationTypes } from "@/context/LocationProvider";
-import BouncyCheckbox from "react-native-bouncy-checkbox";
+import { useLocationTypes } from "@/context/LocationProvider";
 
 import {
   PanGestureHandler,
   GestureHandlerRootView,
 } from "react-native-gesture-handler";
-
-const { width, height } = Dimensions.get("window");
+import { Menu, User2Icon, UserCircle2Icon } from "lucide-react-native";
 
 const GOOGLE_MAPS_API_KEY = process.env.EXPO_PUBLIC_API_KEY;
 const RADIUS = 50000;
@@ -168,9 +163,8 @@ export default function HomeScreen() {
     }
 
     getCurrentLocation();
-  }, [searchText]); // Now fetches on searchText change to make the update real-time
+  }, [searchText]);
 
-  // Search new starting location
   const searchLocation = async (text) => {
     try {
       const response = await axios.get(
@@ -243,13 +237,11 @@ export default function HomeScreen() {
 
   return (
     <View className="flex-1 bg-gray-100">
-      {/* Header */}
-      <View className="flex-row justify-between items-center px-6 py-16 bg-orange-400 shadow-md">
+      <View className="flex-row justify-between items-center px-6 pt-16 pb-4 bg-blue-400 shadow-md">
         <TouchableOpacity onPress={toggleDrawer}>
-          <FontAwesome name="bars" size={32} color="black" />
+          <Menu size={32} color="black" />
         </TouchableOpacity>
 
-        {/* Clickable Location Text */}
         <TouchableOpacity
           onPress={() => {
             setOverlayVisible(true);
@@ -261,55 +253,52 @@ export default function HomeScreen() {
         </TouchableOpacity>
 
         <TouchableOpacity onPress={() => router.push("/profile")}>
-          <FontAwesome name="user-circle" size={32} color="black" />
+          <UserCircle2Icon strokeWidth={1.5} size={32} color="black" />
         </TouchableOpacity>
       </View>
 
-      {/* Search Bar and Filter */}
       <SearchBar
         placeholder="Search for a place..."
         value={searchText}
         onChangeText={(text) => {
-          setSearchText(text); // Update search text
+          setSearchText(text);
           fetchPopularDestinations(
-            location?.coords.latitude,
-            location?.coords.longitude,
+            location?.coords.latitude ?? 0,
+            location?.coords.longitude ?? 0,
             text,
             selectedPreferences,
-          ); // Fetch places in real-time
+          );
         }}
         containerStyle={{
-          backgroundColor: "#ffffff", // White background for clean look
-          marginBottom: 20, // Add bottom spacing
-          shadowColor: "#000", // Subtle shadow for elevation
-          shadowOffset: { width: 0, height: 4 }, // Shadow angle
-          shadowOpacity: 0.1, // Light opacity for subtle effect
-          shadowRadius: 5, // Soft shadow edges
-          elevation: 5, // Android shadow effect
+          backgroundColor: "#ffffff",
+          marginBottom: 20,
+          shadowColor: "#000",
+          shadowOffset: { width: 0, height: 4 },
+          shadowOpacity: 0.1,
+          shadowRadius: 5,
+          elevation: 5,
         }}
         inputContainerStyle={{
-          backgroundColor: "#f4f4f4", // Light grey background for input area
-          borderRadius: 10, // Round corners for the input field
-          paddingHorizontal: 12, // Add padding for better alignment
-          paddingVertical: 8, // Add padding for a comfortable input area
+          backgroundColor: "#f4f4f4",
+          borderRadius: 10,
+          paddingHorizontal: 12,
         }}
         inputStyle={{
-          color: "#333", // Dark grey text for readability
-          fontSize: 16, // Slightly larger font size for better accessibility
+          color: "#333",
+          fontSize: 16,
         }}
-        placeholderTextColor="#999" // Light grey for placeholder text
+        placeholderTextColor="#999"
         leftIconContainerStyle={{
-          paddingLeft: 10, // Add padding around the left icon
+          paddingLeft: 10,
         }}
         rightIconContainerStyle={{
-          paddingRight: 10, // Add padding around the right icon
+          paddingRight: 10,
         }}
-        round={true} // Keep the search bar rounded
-        lightTheme // Use light theme for better visual contrast
-        showCancel={false} // Hide cancel button if not needed
+        round={true}
+        lightTheme
+        showCancel={false}
       />
 
-      {/* Place List */}
       <FlatList
         data={places}
         keyExtractor={(item: any) => item.id}

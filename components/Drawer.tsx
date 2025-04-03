@@ -6,7 +6,14 @@ import {
   Dimensions,
   Animated,
 } from "react-native";
-import { FontAwesome } from "@expo/vector-icons";
+import {
+  ArrowLeft,
+  UserCircle,
+  User,
+  Settings,
+  LogOut,
+  Info,
+} from "lucide-react-native";
 import { useRouter } from "expo-router";
 import { useAuth } from "@/context/AuthProvider";
 
@@ -34,6 +41,8 @@ export default function NavigationDrawer({
     }).start();
   }, [isOpen]);
 
+  const AnimatedIcon = Animated.createAnimatedComponent(ArrowLeft);
+
   return (
     <>
       {/* 📌 Overlay with Blur Effect */}
@@ -50,68 +59,82 @@ export default function NavigationDrawer({
         style={{ transform: [{ translateX: slideAnim }] }}
         className="absolute left-0 top-0 w-[70%] h-full bg-[#1D3D47] z-20 shadow-lg rounded-tr-3xl rounded-br-3xl px-6 py-16"
       >
-        {/* 🔻 Close Button */}
-        <TouchableOpacity
-          className="absolute top-6 right-6 p-2"
-          onPress={onClose}
-        >
-          <FontAwesome name="arrow-left" size={24} color="#FFF" />
-        </TouchableOpacity>
+        <View className="flex-1 bg-neutral-50">
+          <View className="flex-row justify-between items-center px-ios-4 pt-14 pb-4 bg-white/80 backdrop-blur-lg border-b border-neutral-100">
+            <AnimatedIcon
+              size={24}
+              color="#007AFF"
+              style={{
+                transform: [
+                  {
+                    rotate: slideAnim.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: ["0deg", "180deg"],
+                    }),
+                  },
+                ],
+              }}
+            />
+          </View>
 
-        {/* 🔻 User Info */}
-        <View className="items-center mb-8">
-          <FontAwesome name="user-circle" size={60} color="white" />
-          <Text className="text-xl text-white font-semibold mt-3">
-            {user?.user_metadata.email || "User"}
-          </Text>
+          <View className="p-ios-4">
+            <View className="items-center space-y-4">
+              <UserCircle size={72} color="#007AFF" strokeWidth={1.5} />
+              <Text className="text-xl font-semibold text-neutral-900">
+                {user?.user_metadata.email || "User"}
+              </Text>
+            </View>
+
+            <View className="mt-8 space-y-2">
+              <TouchableOpacity
+                className="flex-row items-center p-ios-3 rounded-ios active:bg-neutral-100"
+                onPress={() => {
+                  router.push("/profile");
+                  onClose();
+                }}
+              >
+                <User size={22} color="#007AFF" strokeWidth={1.5} />
+                <Text className="ml-3 text-base text-neutral-900">Profile</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                className="flex-row items-center p-ios-3 rounded-ios active:bg-neutral-100"
+                onPress={() => {
+                  router.push("/settings");
+                  onClose();
+                }}
+              >
+                <Settings size={22} color="#007AFF" strokeWidth={1.5} />
+                <Text className="ml-3 text-base text-neutral-900">
+                  Settings
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                className="flex-row items-center p-ios-3 rounded-ios active:bg-neutral-100"
+                onPress={() => {
+                  signOut();
+                  router.push("/auth");
+                  onClose();
+                }}
+              >
+                <LogOut size={22} color="#007AFF" strokeWidth={1.5} />
+                <Text className="ml-3 text-base text-neutral-900">Logout</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                className="flex-row items-center p-ios-3 rounded-ios active:bg-neutral-100"
+                onPress={() => {
+                  router.push("/about");
+                  onClose();
+                }}
+              >
+                <Info size={22} color="#007AFF" strokeWidth={1.5} />
+                <Text className="ml-3 text-base text-neutral-900">About</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
         </View>
-
-        {/* 🔻 Navigation Items */}
-        <TouchableOpacity
-          className="flex-row items-center py-5 border-b border-white/20"
-          onPress={() => {
-            router.push("/profile");
-            onClose();
-          }}
-        >
-          <FontAwesome name="user" size={22} color="white" />
-          <Text className="text-lg text-white font-medium ml-4">Profile</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          className="flex-row items-center py-5 border-b border-white/20"
-          onPress={() => {
-            router.push("/settings");
-            onClose();
-          }}
-        >
-          <FontAwesome name="cog" size={22} color="white" />
-          <Text className="text-lg text-white font-medium ml-4">Settings</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          className="flex-row items-center py-5"
-          onPress={() => {
-            signOut();
-            router.push("/auth");
-            onClose();
-          }}
-        >
-          <FontAwesome name="sign-out" size={22} color="white" />
-          <Text className="text-lg text-white font-medium ml-4">Logout</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          className="flex-row items-center py-5"
-          onPress={() => {
-            signOut();
-            router.push("/about");
-            onClose();
-          }}
-        >
-          <FontAwesome name="info" size={22} color="white" />
-          <Text className="text-lg text-white font-medium ml-4">About</Text>
-        </TouchableOpacity>
       </Animated.View>
     </>
   );

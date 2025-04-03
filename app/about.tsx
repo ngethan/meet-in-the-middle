@@ -1,6 +1,13 @@
 import React from "react";
 import { View, Text, ScrollView, TouchableOpacity } from "react-native";
-import { FontAwesome } from "@expo/vector-icons";
+import {
+  ArrowLeft,
+  MapPin,
+  MessageSquare,
+  UserPlus,
+  Search,
+  Compass,
+} from "lucide-react-native";
 import { useRouter } from "expo-router";
 
 export default function AboutScreen() {
@@ -8,17 +15,14 @@ export default function AboutScreen() {
 
   return (
     <View className="flex-1 bg-gray-100">
-      {/* 📌 Header */}
       <View className="flex-row items-center px-6 py-6 bg-orange-500 shadow-lg">
         <TouchableOpacity onPress={() => router.back()} className="p-2">
-          <FontAwesome name="arrow-left" size={24} color="white" />
+          <ArrowLeft size={24} color="white" />
         </TouchableOpacity>
         <Text className="text-lg font-bold text-white ml-4 py-12">About</Text>
       </View>
 
-      {/* 📌 Content Section */}
       <ScrollView className="p-6">
-        {/* 📌 App Overview */}
         <View className="mb-6">
           <Text className="text-2xl font-bold text-gray-900">
             Welcome to Our Trip Planner!
@@ -31,12 +35,11 @@ export default function AboutScreen() {
           </Text>
         </View>
 
-        {/* 📌 Key Features */}
         <View className="mb-6">
           <Text className="text-xl font-bold text-gray-900">Key Features</Text>
 
           <View className="flex-row items-center mt-4">
-            <FontAwesome name="map-marker" size={24} color="red" />
+            <MapPin size={24} color="red" />
             <Text className="ml-3 text-base text-gray-700">
               Trip Optimization - Finds the best meeting spot for all
               participants.
@@ -44,14 +47,14 @@ export default function AboutScreen() {
           </View>
 
           <View className="flex-row items-center mt-4">
-            <FontAwesome name="comments" size={24} color="blue" />
+            <MessageSquare size={24} color="blue" />
             <Text className="ml-3 text-base text-gray-700">
               Group Chat - Discuss trip plans in real-time.
             </Text>
           </View>
 
           <View className="flex-row items-center mt-4">
-            <FontAwesome name="road" size={24} color="green" />
+            <Compass size={24} color="green" />
             <Text className="ml-3 text-base text-gray-700">
               Navigation & Routes - Get real-time directions to your
               destination.
@@ -59,14 +62,14 @@ export default function AboutScreen() {
           </View>
 
           <View className="flex-row items-center mt-4">
-            <FontAwesome name="user-plus" size={24} color="purple" />
+            <UserPlus size={24} color="purple" />
             <Text className="ml-3 text-base text-gray-700">
               Invite & Manage Participants - Easily add friends to trips.
             </Text>
           </View>
 
           <View className="flex-row items-center mt-4">
-            <FontAwesome name="search-location" size={24} color="orange" />
+            <Search size={24} color="orange" />
             <Text className="ml-3 text-base text-gray-700">
               Smart Location Picker - Pick your starting point using a map.
             </Text>

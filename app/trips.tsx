@@ -14,7 +14,7 @@ import {
 import { useRouter, useLocalSearchParams } from "expo-router";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { supabase } from "@/lib/supabase";
-import { FontAwesome } from "@expo/vector-icons";
+import { ArrowLeft, Plus, Calendar, Clock } from "lucide-react-native";
 import * as Location from "expo-location";
 import { useAuth } from "@/context/AuthProvider";
 import moment from "moment";
@@ -150,7 +150,7 @@ export default function TripsScreen() {
       {/* 📌 Header */}
       <View className="flex-row items-center px-6 py-16 bg-orange-500 shadow-lg">
         <TouchableOpacity onPress={() => router.back()} className="p-2">
-          <FontAwesome name="arrow-left" size={28} color="black" />
+          <ArrowLeft size={28} color="black" />
         </TouchableOpacity>
         <Text className="text-lg font-bold text-black ml-4">
           Trips of Chat: {chatName}
@@ -223,7 +223,7 @@ export default function TripsScreen() {
           setTripModalVisible(true);
         }}
       >
-        {/* <FontAwesome name="plus" size={30} color="white" /> */}
+        <Plus size={30} color="white" />
         <Text className="text-white font-bold text-center text-sm">
           Create Trips
         </Text>
