@@ -50,7 +50,7 @@ export default function TripsScreen() {
     }
   }, [chatId]);
 
-  const handleDateChange = (event, selectedDate, isStart) => {
+  const handleDateChange = (event: any, selectedDate: any, isStart: any) => {
     if (selectedDate) {
       if (isStart) {
         setStartDate(selectedDate);
@@ -141,7 +141,6 @@ export default function TripsScreen() {
       setStartingLocation("");
       setTripModalVisible(false);
       fetchTrips();
-      fetchTrips(selectedChat.id);
     }
   };
 
@@ -184,8 +183,8 @@ export default function TripsScreen() {
             }}
             onPress={() =>
               router.push({
-                pathname: `/trip/${item.id}`,
-                params: { tripId: item.id },
+                pathname: "/trip/[id]",
+                params: { id: item.id },
               })
             }
           >

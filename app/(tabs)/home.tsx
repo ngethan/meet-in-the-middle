@@ -10,6 +10,7 @@ import {
   Modal,
   TextInput,
   Dimensions,
+  ScrollView,
 } from "react-native";
 import { FontAwesome } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
@@ -25,7 +26,12 @@ import {
   PanGestureHandler,
   GestureHandlerRootView,
 } from "react-native-gesture-handler";
-import { Menu, User2Icon, UserCircle2Icon } from "lucide-react-native";
+import {
+  Menu,
+  User2Icon,
+  UserCircle2Icon,
+  ChevronDown,
+} from "lucide-react-native";
 
 const GOOGLE_MAPS_API_KEY = process.env.EXPO_PUBLIC_API_KEY;
 const RADIUS = 50000;
@@ -36,9 +42,10 @@ export default function HomeScreen() {
     null,
   );
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  const [address, setAddress] = useState(null);
-  const [places, setPlaces] = useState([]);
-  const [searchResults, setSearchResults] = useState([]);
+  const [address, setAddress] =
+    useState<Location.LocationGeocodedAddress | null>(null);
+  const [places, setPlaces] = useState<any[]>([]);
+  const [searchResults, setSearchResults] = useState<any[]>([]);
   const [searchText, setSearchText] = useState("");
   const [searchLocationText, setSearchLocationText] = useState("");
   const [isOverlayVisible, setOverlayVisible] = useState(false);
@@ -89,7 +96,7 @@ export default function HomeScreen() {
         },
       );
 
-      let results = response.data.results.map((place) => ({
+      let results = response.data.results.map((place: any) => ({
         id: place.place_id,
         title: place.name,
         description: place.vicinity || "Popular place nearby.",
@@ -105,22 +112,22 @@ export default function HomeScreen() {
 
       // Real-time filtering based on search text
       if (query) {
-        results = results.filter((place) =>
+        results = results.filter((place: any) =>
           place.title.toLowerCase().includes(query.toLowerCase()),
         );
       }
       if (selectedPreferences.length > 0) {
-        results = results.filter((place) =>
-          place.types.some((type) => selectedPreferences.includes(type)),
+        results = results.filter((place: any) =>
+          place.types.some((type: any) => selectedPreferences.includes(type)),
         );
       }
 
-      results = results.map((place) => ({
+      results = results.map((place: any) => ({
         ...place,
         distance: calculateDistance(lat, lon, place.latitude, place.longitude),
       }));
 
-      results.sort((a, b) => a.distance - b.distance);
+      results.sort((a: any, b: any) => a.distance - b.distance);
       setPlaces(results);
     } catch (error) {
       console.error("Error fetching places:", error);
@@ -163,9 +170,9 @@ export default function HomeScreen() {
     }
 
     getCurrentLocation();
-  }, [searchText]);
+  }, [searchText, selectedPreferences]);
 
-  const searchLocation = async (text) => {
+  const searchLocation = async (text: string) => {
     try {
       const response = await axios.get(
         `https://maps.googleapis.com/maps/api/place/autocomplete/json`,
@@ -183,7 +190,7 @@ export default function HomeScreen() {
     }
   };
 
-  const changeLocation = async (location) => {
+  const changeLocation = async (location: any) => {
     let response = await axios.get(
       `https://maps.googleapis.com/maps/api/place/details/json`,
       {
@@ -271,7 +278,7 @@ export default function HomeScreen() {
         }}
         containerStyle={{
           backgroundColor: "#ffffff",
-          marginBottom: 20,
+          marginBottom: 10,
           shadowColor: "#000",
           shadowOffset: { width: 0, height: 4 },
           shadowOpacity: 0.1,
@@ -298,6 +305,56 @@ export default function HomeScreen() {
         lightTheme
         showCancel={false}
       />
+
+      {/* Filter Section */}
+      <View className="px-4 mb-4">
+        <TouchableOpacity
+          onPress={togglePreferenceDropdown}
+          className="flex-row items-center justify-between bg-white p-3 rounded-lg shadow-sm"
+        >
+          <Text className="text-gray-700 font-medium">
+            {selectedPreferences.length
+              ? `${selectedPreferences.length} filters selected`
+              : "Filter by type"}
+          </Text>
+          <ChevronDown
+            size={20}
+            color="#4B5563"
+            style={{
+              transform: [{ rotate: isPreferenceOpen ? "180deg" : "0deg" }],
+            }}
+          />
+        </TouchableOpacity>
+
+        {isPreferenceOpen && (
+          <View className="bg-white mt-2 rounded-lg shadow-sm p-2 max-h-40">
+            <ScrollView>
+              {preferenceOptions.map((preference) => (
+                <TouchableOpacity
+                  key={preference}
+                  onPress={() => handlePreferenceChange(preference)}
+                  className="flex-row items-center p-2"
+                >
+                  <View
+                    className={`w-5 h-5 rounded border ${
+                      selectedPreferences.includes(preference)
+                        ? "bg-blue-500 border-blue-500"
+                        : "border-gray-300"
+                    } mr-3`}
+                  >
+                    {selectedPreferences.includes(preference) && (
+                      <Text className="text-white text-center">✓</Text>
+                    )}
+                  </View>
+                  <Text className="text-gray-700">
+                    {preference.replace(/_/g, " ").toLowerCase()}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        )}
+      </View>
 
       <FlatList
         data={places}

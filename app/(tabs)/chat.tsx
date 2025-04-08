@@ -28,17 +28,38 @@ import moment from "moment";
 import { router } from "expo-router";
 import LoadingOverlay from "../loadingoverlay";
 
+interface Chat {
+  id: string;
+  chatName: string;
+  lastMessage?: string;
+  lastMessageTime?: string;
+}
+
+interface GroupMember {
+  fullName: string;
+}
+
+interface Message {
+  _id: string;
+  content: string;
+  createdAt: Date;
+  user: {
+    _id: string;
+    name: string;
+  };
+}
+
 export default function ChatScreen() {
   const { user } = useAuth();
   const [chats, setChats] = useState<any[]>([]);
-  const [messages, setMessages] = useState([]);
-  const [selectedChat, setSelectedChat] = useState(null);
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [selectedChat, setSelectedChat] = useState<Chat | null>(null);
   const [newGroupName, setNewGroupName] = useState("");
   const [inviteEmail, setInviteEmail] = useState("");
   const [isModalVisible, setModalVisible] = useState(false);
   const [messageText, setMessageText] = useState("");
   const [isInviteModalVisible, setInviteModalVisible] = useState(false);
-  const [groupMembers, setGroupMembers] = useState([]);
+  const [groupMembers, setGroupMembers] = useState<GroupMember[]>([]);
   const [isMembersModalVisible, setMembersModalVisible] = useState(false);
   const [isFabMenuOpen, setFabMenuOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -110,7 +131,11 @@ export default function ChatScreen() {
       .order("lastDate", { ascending: true });
 
     if (!error) {
-      setGroupMembers(data.map((member) => member.users));
+      setGroupMembers(
+        data.map((member) => ({
+          fullName: member.users[0]?.fullName || "Unknown User",
+        })),
+      );
       setMembersModalVisible(true);
     } else {
       Alert.alert("Error", "Failed to fetch group members.");
@@ -126,10 +151,15 @@ export default function ChatScreen() {
         fetchGroupMembers();
         break;
       case "trips":
-        router.push({
-          pathname: "/trips",
-          params: { chatId: selectedChat.id, chatName: selectedChat.chatName },
-        });
+        if (selectedChat) {
+          router.push({
+            pathname: "/trips",
+            params: {
+              chatId: selectedChat.id,
+              chatName: selectedChat.chatName,
+            },
+          });
+        }
         break;
       default:
         break;
@@ -268,7 +298,7 @@ export default function ChatScreen() {
 
                 if (userError) {
                   console.warn(
-                    `Failed to fetch sender name for message ${latestMessage.id}:`,
+                    `Failed to fetch sender name for message from ${latestMessage.senderId}:`,
                     userError,
                   );
                 }

@@ -45,7 +45,11 @@ export default function PlaceScreen() {
     description: string;
     images: string[];
     types: [];
-    reviews: [];
+    reviews: {
+      author_name: string;
+      rating: number;
+      text: string;
+    }[];
     latitude: string;
     longitude: string;
     address: string;
@@ -55,8 +59,8 @@ export default function PlaceScreen() {
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [newTripName, setNewTripName] = useState("");
   const { user } = useAuth();
-  const [selectedChat, setSelectedChat] = useState(null);
-  const [chats, setChats] = useState([]);
+  const [selectedChat, setSelectedChat] = useState<any>(null);
+  const [chats, setChats] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [visible, setVisible] = useState(false);
   const [tripModalVisible, setTripModalVisible] = useState(false);
@@ -192,7 +196,11 @@ export default function PlaceScreen() {
     }
   }
 
-  const handleDateChange = (event, selectedDate, isStart) => {
+  const handleDateChange = (
+    event: any,
+    selectedDate: Date | undefined,
+    isStart: boolean,
+  ) => {
     if (selectedDate) {
       if (isStart) {
         setStartDate(selectedDate);
@@ -207,6 +215,10 @@ export default function PlaceScreen() {
   // Handle creating a trip at this location
   const handleCreateTrip = async () => {
     setIsLoading(true);
+    if (!place) {
+      return Alert.alert("Error", "Place information not available.");
+    }
+
     if (!place.title.trim()) {
       return Alert.alert("Error", "Trip name required.");
     }
@@ -320,7 +332,7 @@ export default function PlaceScreen() {
           </View>
 
           <TouchableOpacity
-            className="bg-blue-600 py-3 mx-5 rounded-xl shadow-lg flex items-center justify-center mt-4"
+            className="bg-indigo-400 py-3 mx-5 rounded-xl shadow-lg flex items-center justify-center mt-4"
             onPress={() => router.push(`/map/${id}`)}
           >
             <Text className="text-white font-semibold text-lg">
@@ -329,7 +341,7 @@ export default function PlaceScreen() {
           </TouchableOpacity>
 
           <TouchableOpacity
-            className="bg-orange-500 py-3 mx-5 rounded-xl shadow-lg flex items-center justify-center mt-6"
+            className="bg-blue-600 py-3 mx-5 rounded-xl shadow-lg flex items-center justify-center mt-6"
             onPress={() => {
               fetchChats();
             }}

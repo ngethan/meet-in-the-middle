@@ -48,16 +48,16 @@ export default function TutorialScreen() {
 
   // Animated glowing style
   const animatedGlowStyle = useAnimatedStyle(() => ({
-    shadowOpacity: 1,
-    shadowRadius: 10 + glow.value * 10,
-    shadowColor: interpolateColor(glow.value, [0, 1], ["#ff9800", "#ff5722"]),
-    shadowOffset: { width: 0, height: 0 },
-    transform: [{ scale: 1 + glow.value * 0.05 }],
+    shadowOpacity: 0.8,
+    shadowRadius: 15 + glow.value * 15,
+    shadowColor: interpolateColor(glow.value, [0, 1], ["#FF6B6B", "#4ECDC4"]),
+    shadowOffset: { width: 0, height: 4 },
+    transform: [{ scale: 1 + glow.value * 0.03 }],
   }));
 
   return (
     <View className="flex-1 bg-gray-100">
-      <View className="flex-row items-center px-6 py-16 bg-orange-500 shadow-lg">
+      <View className="flex-row items-center px-6 py-16 bg-blue-500 shadow-lg">
         <TouchableOpacity onPress={() => router.back()} className="p-2">
           <ArrowLeft size={24} color="white" />
         </TouchableOpacity>
@@ -78,10 +78,10 @@ export default function TutorialScreen() {
         <View className="mb-12 bg-white p-6 rounded-xl shadow-md">
           <TouchableOpacity
             onPress={toggleExpand}
-            className="p-4 bg-orange-500 rounded-lg"
+            className="p-4 bg-blue-500 rounded-lg"
           >
             <Text className="text-lg font-bold text-white text-center">
-              {expanded ? "Hide Guide ⬆️" : "Show Trip Guide ⬇️"}
+              {expanded ? "Hide Guide ⬆️" : "Show App Guide ⬇️"}
             </Text>
           </TouchableOpacity>
 
@@ -149,14 +149,14 @@ export default function TutorialScreen() {
 
         <Animated.View style={[animatedGlowStyle]}>
           <TouchableOpacity
-            className="mb-12 bg-orange-500 p-6 rounded-xl"
+            className="mb-12 bg-blue-500 p-6 rounded-xl"
             onPress={() => router.push("/auth")}
             activeOpacity={0.7}
           >
             <Text className="text-lg font-bold text-white text-center">
               You're all set! 🎉
             </Text>
-            <Text className="text-base font-bold text-orange-200 mt-2 text-center">
+            <Text className="text-base font-bold text-teal-200 mt-2 text-center">
               Click to start planning your trips now and make every meetup
               hassle-free!
             </Text>

@@ -62,45 +62,103 @@ import { LocationProvider, useLocationTypes } from "@/context/LocationProvider";
 // // // Convert the object into an array
 // const destinationOptions = Object.values(typeMappings);
 
+// Define Trip interface
+interface Trip {
+  id: string;
+  name: string;
+  bestLocation: string;
+  bestLatitude: number;
+  bestLongitude: number;
+  bestAddress: string;
+  bestPhotos: string[];
+  bestTypes: string[];
+  startDate: string;
+  endDate: string;
+}
+
 export default function TripDetailsScreen() {
   const { user } = useAuth();
   const { tripId } = useLocalSearchParams();
   const router = useRouter();
 
-  const [trip, setTrip] = useState(null);
-  const [participants, setParticipants] = useState([]);
+  const [trip, setTrip] = useState<Trip | null>(null);
+  const [participants, setParticipants] = useState<
+    {
+      id: string;
+      fullName: string;
+      startingLocation?: string;
+      latitude?: number;
+      longitude?: number;
+      preferences?: string[];
+    }[]
+  >([]);
   const [mapModalVisible, setMapModalVisible] = useState(false);
   const [myLocation, setMyLocation] = useState(null);
-  const [selectedLocation, setSelectedLocation] = useState(null);
+  const [selectedLocation, setSelectedLocation] = useState<{
+    latitude: number;
+    longitude: number;
+  } | null>(null);
   const [currentLocation, setCurrentLocation] = useState(null);
-  const [bestLocation, setBestLocation] = useState(null);
+  const [bestLocation, setBestLocation] = useState<{
+    bestLatitude: number;
+    bestLongitude: number;
+    bestAddress: string;
+    bestPlaceId: string;
+    bestPhotos?: string[];
+    bestTypes?: string[];
+  } | null>(null);
   const [loading, setLoading] = useState(false);
   const [startingLocation, setStartingLocation] = useState(null);
-  const [searchResults, setSearchResults] = useState([]);
+  const [searchResults, setSearchResults] = useState<any[]>([]);
   const [searchText, setSearchText] = useState("");
-  const [selectedParticipant, setSelectedParticipant] = useState(null);
+  const [selectedParticipant, setSelectedParticipant] = useState<any>(null);
   const [isOverlayVisible, setOverlayVisible] = useState(false);
   const [progress, setProgress] = useState(new Animated.Value(0)); // For progress animation
   const [searchStatus, setSearchStatus] = useState("Starting search...");
-  const [candidateResults, setCandidateResults] = useState([]);
+  const [candidateResults, setCandidateResults] = useState<any[]>([]);
   const [preferenceSearch, setPreferenceSearch] = useState("");
-  const [filteredPreferences, setFilteredPreferences] = useState([]);
-  const [selectedPreferences, setSelectedPreferences] = useState([]);
-  const [isPreferenceModalVisible, setPreferenceModalVisible] = useState(false);
+  const [filteredPreferences, setFilteredPreferences] = useState<any[]>([]);
+  const [selectedPreferences, setSelectedPreferences] = useState<string[]>([]);
+  const [preferenceModalVisible, setPreferenceModalVisible] = useState(false);
   const [openDropdown, setOpenDropdown] = useState(false);
-  const [allPreferences, setAllPreferences] = useState([]);
+  const [allPreferences, setAllPreferences] = useState<any[]>([]);
   const [locationSelectionModalVisible, setLocationSelectionModalVisible] =
     useState(false);
-  const [topLocations, setTopLocations] = useState([]);
+  const [topLocations, setTopLocations] = useState<any[]>([]);
+
+  // Define destination categories for preference filtering
+  const destinationCategories: Record<string, string[]> = {
+    restaurant: [
+      "food",
+      "eat",
+      "dining",
+      "restaurant",
+      "cafe",
+      "café",
+      "bistro",
+    ],
+    shopping: ["shop", "store", "mall", "retail", "boutique"],
+    entertainment: [
+      "entertainment",
+      "fun",
+      "activity",
+      "attraction",
+      "amusement",
+    ],
+    nightlife: ["bar", "club", "nightlife", "pub", "lounge"],
+    outdoor: ["park", "outdoor", "nature", "hiking", "trail", "beach"],
+    culture: ["museum", "gallery", "theater", "theatre", "cultural", "art"],
+    sports: ["sports", "gym", "fitness", "stadium", "arena"],
+  };
 
   const GOOGLE_MAPS_API_KEY = process.env.EXPO_PUBLIC_API_KEY;
   useEffect(() => {
     fetchTripDetails();
   }, []);
 
-  function extractPhotoUrls(photos) {
+  function extractPhotoUrls(photos: any[]) {
     return photos.map(
-      (photo) =>
+      (photo: any) =>
         `https://maps.googleapis.com/maps/api/place/photo?maxwidth=800&photoreference=${photo.photo_reference}&key=${GOOGLE_MAPS_API_KEY}`,
     );
   }
@@ -112,7 +170,7 @@ export default function TripDetailsScreen() {
   }));
 
   // Search new starting location
-  const searchLocation = async (text) => {
+  const searchLocation = async (text: string) => {
     try {
       const response = await axios.get(
         `https://maps.googleapis.com/maps/api/place/autocomplete/json`,
@@ -131,7 +189,7 @@ export default function TripDetailsScreen() {
   };
 
   // Change the starting location
-  const selectLocation = async (placeId) => {
+  const selectLocation = async (placeId: string) => {
     try {
       const response = await axios.get(
         `https://maps.googleapis.com/maps/api/place/details/json`,
@@ -173,7 +231,7 @@ export default function TripDetailsScreen() {
             longitude: location.longitude,
           })
           .eq("tripId", tripId)
-          .eq("userId", selectedParticipant.id); // Ensure we update only this user
+          .eq("userId", selectedParticipant?.id); // Use optional chaining to safely access id
 
         if (!error) {
           fetchParticipants(); // Refresh data
@@ -268,7 +326,10 @@ export default function TripDetailsScreen() {
   }
 
   // 📍 Handle Map Selection
-  const handleSelectLocation = (coordinate) => {
+  const handleSelectLocation = (coordinate: {
+    latitude: number;
+    longitude: number;
+  }) => {
     setSelectedLocation(coordinate);
   };
 
@@ -316,7 +377,7 @@ export default function TripDetailsScreen() {
         useNativeDriver: false,
       }).start();
 
-      const participants = await fetchTripParticipants(tripId);
+      const participants = await fetchTripParticipants(tripId as string);
 
       if (participants.length === 0) {
         Alert.alert("Error", "No participants with valid locations.");
@@ -326,6 +387,15 @@ export default function TripDetailsScreen() {
 
       setSearchStatus("Computing midpoint...");
       const midpoint = computeMidpoint(participants);
+
+      if (!midpoint) {
+        Alert.alert(
+          "Error",
+          "Could not compute midpoint from participant locations.",
+        );
+        setLoading(false);
+        return;
+      }
 
       setSearchStatus("Fetching nearby locations...");
       const candidates = await fetchCandidateLocations(midpoint);
@@ -378,7 +448,7 @@ export default function TripDetailsScreen() {
     }
   }
 
-  async function updateBestLocation(location) {
+  async function updateBestLocation(location: any) {
     if (!location) {
       Alert.alert("Error", "Could not determine the best location.");
       setLoading(false);
@@ -412,11 +482,11 @@ export default function TripDetailsScreen() {
     fetchTripDetails(); // Refresh data
   }
 
-  function calculatePreferenceScore(participants, candidate) {
+  function calculatePreferenceScore(participants: any[], candidate: any) {
     let score = 0;
     participants.forEach((participant) => {
       if (participant.preferences) {
-        const matchCount = participant.preferences.filter((pref) =>
+        const matchCount = participant.preferences.filter((pref: string) =>
           candidate.types.includes(pref),
         ).length;
         score += matchCount;
@@ -425,7 +495,7 @@ export default function TripDetailsScreen() {
     return score;
   }
 
-  async function fetchTripParticipants(tripId) {
+  async function fetchTripParticipants(tripId: string) {
     try {
       const { data, error } = await supabase
         .from("tripParticipants")
@@ -441,16 +511,18 @@ export default function TripDetailsScreen() {
     }
   }
 
-  function computeMidpoint(locations) {
+  function computeMidpoint(locations: any[]) {
     if (locations.length === 0) return null;
 
     let latSum = 0,
       lonSum = 0;
 
-    locations.forEach(({ latitude, longitude }) => {
-      latSum += latitude;
-      lonSum += longitude;
-    });
+    locations.forEach(
+      ({ latitude, longitude }: { latitude: number; longitude: number }) => {
+        latSum += latitude;
+        lonSum += longitude;
+      },
+    );
 
     return {
       latitude: latSum / locations.length,
@@ -458,7 +530,10 @@ export default function TripDetailsScreen() {
     };
   }
 
-  async function fetchCandidateLocations(midpoint) {
+  async function fetchCandidateLocations(midpoint: {
+    latitude: number;
+    longitude: number;
+  }) {
     const url = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${midpoint.latitude},${midpoint.longitude}&radius=50000&type=restaurant&key=${GOOGLE_MAPS_API_KEY}`;
 
     try {
@@ -468,7 +543,7 @@ export default function TripDetailsScreen() {
       if (!data.results) return [];
 
       const detailedResults = await Promise.all(
-        data.results.map(async (place) => {
+        data.results.map(async (place: any) => {
           const details = await fetchPlaceDetails(place.place_id);
           return {
             name: place.name,
@@ -499,7 +574,7 @@ export default function TripDetailsScreen() {
     }
   }
 
-  async function fetchPlaceDetails(placeId) {
+  async function fetchPlaceDetails(placeId: string) {
     const detailsUrl = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${placeId}&fields=name,opening_hours&key=${GOOGLE_MAPS_API_KEY}`;
 
     try {
@@ -519,18 +594,22 @@ export default function TripDetailsScreen() {
   }
 
   // Helper function to get the day of the week (0 - Sunday, 6 - Saturday)
-  function getDayOfWeek(dateString) {
+  function getDayOfWeek(dateString: string) {
     const date = new Date(dateString);
     return date.getDay(); // Returns a number: 0 for Sunday, 1 for Monday, etc.
   }
 
   // Helper function to get the time in minutes from a Date object
-  function getTimeInMinutes(dateString) {
+  function getTimeInMinutes(dateString: string) {
     const date = new Date(dateString);
     return date.getHours() * 60 + date.getMinutes();
   }
 
-  function isOpenDuringTrip(openingHours, tripStart, tripEnd) {
+  function isOpenDuringTrip(
+    openingHours: any[],
+    tripStart: string,
+    tripEnd: string,
+  ) {
     if (!tripStart || !tripEnd || !openingHours) return false;
 
     // Parse the trip start and end dates
@@ -568,16 +647,16 @@ export default function TripDetailsScreen() {
     });
   }
 
-  function parseTime(timeString) {
+  function parseTime(timeString: string) {
     // Convert "HHMM" format to minutes of the day (e.g., "0900" -> 540, "2230" -> 1350)
     const hours = parseInt(timeString.substring(0, 2), 10);
     const minutes = parseInt(timeString.substring(2, 4), 10);
     return hours * 60 + minutes;
   }
 
-  async function fetchTravelTimes(participants, candidate) {
+  async function fetchTravelTimes(participants: any[], candidate: any) {
     const origins = participants
-      .map((p) => `${p.latitude},${p.longitude}`)
+      .map((p: any) => `${p.latitude},${p.longitude}`)
       .join("|");
     const destination = `${candidate.latitude},${candidate.longitude}`;
 
@@ -588,7 +667,7 @@ export default function TripDetailsScreen() {
       const data = await response.json();
       if (!data.rows) return null;
 
-      const totalTravelTime = data.rows.reduce((sum, row) => {
+      const totalTravelTime = data.rows.reduce((sum: number, row: any) => {
         if (row.elements[0].status === "OK") {
           return sum + row.elements[0].duration.value;
         }
@@ -602,11 +681,18 @@ export default function TripDetailsScreen() {
     }
   }
 
-  async function findOptimalDestination(tripId) {
+  async function findOptimalDestination(tripId: string) {
     const participants = await fetchTripParticipants(tripId);
     if (participants.length === 0) return null;
 
     const midpoint = computeMidpoint(participants);
+    if (!midpoint) {
+      Alert.alert(
+        "Error",
+        "Could not compute midpoint from participant locations.",
+      );
+      return null;
+    }
     const candidates = await fetchCandidateLocations(midpoint);
 
     let bestLocation = null;
@@ -624,10 +710,10 @@ export default function TripDetailsScreen() {
   }
 
   // 📌 Preference Filtering with Word Embeddings
-  const handlePreferenceSearch = (text) => {
+  const handlePreferenceSearch = (text: string) => {
     setPreferenceSearch(text);
     const lowerText = text.toLowerCase();
-    let matches = [];
+    let matches: { label: string; value: string }[] = [];
 
     Object.keys(destinationCategories).forEach((category) => {
       if (
@@ -640,7 +726,7 @@ export default function TripDetailsScreen() {
     setFilteredPreferences(matches);
   };
 
-  const handleSelectPreference = (category) => {
+  const handleSelectPreference = (category: string) => {
     if (!selectedPreferences.includes(category)) {
       setSelectedPreferences([...selectedPreferences, category]);
     }
@@ -665,7 +751,7 @@ export default function TripDetailsScreen() {
 
       setLoading(false);
       // setPreferenceModalVisible(false);
-      setSelectedPreferences(null);
+      setSelectedPreferences([]);
     } else {
       Alert.alert("Error", "Set preferences first");
       return;
@@ -833,8 +919,8 @@ export default function TripDetailsScreen() {
               </Text>
               <Text className="text-sm text-gray-500">
                 Preferences:{" "}
-                {item.preferences.length > 0
-                  ? item.preferences.join(", ")
+                {(item.preferences || []).length > 0
+                  ? item.preferences?.join(", ")
                   : "Click to choose preferences"}
               </Text>
               <Text className="text-sm text-gray-500">
@@ -897,7 +983,7 @@ export default function TripDetailsScreen() {
 
         {/* 📌 Destination Preferences Modal */}
         <Modal
-          visible={isPreferenceModalVisible}
+          visible={preferenceModalVisible}
           transparent
           animationType="slide"
         >
@@ -949,9 +1035,9 @@ export default function TripDetailsScreen() {
               >
                 <Text className="text-white font-bold text-center text-lg">
                   {" "}
-                  {selectedLocation
-                    ? selectedLocation
-                    : "Set Starting Location"}{" "}
+                  {typeof selectedLocation === "object"
+                    ? "Location Selected"
+                    : selectedLocation || "Set Starting Location"}{" "}
                 </Text>
               </TouchableOpacity>
 
@@ -1087,7 +1173,7 @@ export default function TripDetailsScreen() {
 
                         {/* Location Types */}
                         <View className="flex-row flex-wrap mt-2 mx-3">
-                          {item.types.map((type, index) => (
+                          {item.types.map((type: string, index: number) => (
                             <Text
                               key={index}
                               className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full mr-2 mb-2"
