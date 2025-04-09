@@ -326,7 +326,7 @@ export default function MapScreen() {
         {/* Back Button */}
         <View className="absolute top-2r left-5">
           <TouchableOpacity
-            className="bg-orange-700 px-4 py-3 top-20 rounded-lg shadow-lg"
+            className="bg-purple-500 px-4 py-3 top-20 rounded-lg shadow-lg"
             onPress={() => router.back()}
           >
             <Text className="text-white font-bold">Back</Text>
@@ -458,7 +458,7 @@ const styles = StyleSheet.create({
     position: "absolute",
     bottom: 15,
     right: 10,
-    backgroundColor: "#ED8F03",
+    backgroundColor: "blue",
     padding: 10,
     borderRadius: 8,
   },
@@ -506,14 +506,14 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   card: {
-    backgroundColor: "#f0f0f0",
+    backgroundColor: "#fff",
     marginHorizontal: 5,
     padding: 15,
     borderRadius: 10,
     alignItems: "center",
   },
   selectedCard: {
-    backgroundColor: "#ED8F03",
+    backgroundColor: "#009FFF",
   },
   modeText: {
     fontSize: 16,

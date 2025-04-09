@@ -12,6 +12,6 @@
     ".expo/types/**/*.ts",
     "expo-env.d.ts",
     "nativewind-env.d.ts",
-    "app/loadingoverlay.js"
+    "components/loadingoverlay.js"
   ]
 }

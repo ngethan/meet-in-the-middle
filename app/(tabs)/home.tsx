@@ -19,7 +19,7 @@ import axios from "axios";
 import { SearchBar } from "@rneui/themed";
 import { useAuth } from "@/context/AuthProvider";
 import * as Location from "expo-location";
-import LoadingOverlay from "../loadingoverlay";
+import LoadingOverlay from "../../components/loadingoverlay";
 import { useLocationTypes } from "@/context/LocationProvider";
 
 import {
@@ -34,7 +34,7 @@ import {
 } from "lucide-react-native";
 
 const GOOGLE_MAPS_API_KEY = process.env.EXPO_PUBLIC_API_KEY;
-const RADIUS = 50000;
+const RADIUS = 50000; // 50 km
 
 export default function HomeScreen() {
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -50,6 +50,10 @@ export default function HomeScreen() {
   const [searchLocationText, setSearchLocationText] = useState("");
   const [isOverlayVisible, setOverlayVisible] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [currentSearchLocation, setCurrentSearchLocation] = useState<{
+    lat: number;
+    lon: number;
+  } | null>(null);
 
   const { user, signOut } = useAuth();
   const router = useRouter();
@@ -116,6 +120,7 @@ export default function HomeScreen() {
           place.title.toLowerCase().includes(query.toLowerCase()),
         );
       }
+
       if (selectedPreferences.length > 0) {
         results = results.filter((place: any) =>
           place.types.some((type: any) => selectedPreferences.includes(type)),
@@ -151,6 +156,10 @@ export default function HomeScreen() {
       try {
         let location = await Location.getCurrentPositionAsync({});
         setLocation(location);
+        setCurrentSearchLocation({
+          lat: location.coords.latitude,
+          lon: location.coords.longitude,
+        });
 
         let geoAddress = await Location.reverseGeocodeAsync(location.coords);
         if (geoAddress.length > 0) {
@@ -169,7 +178,16 @@ export default function HomeScreen() {
       }
     }
 
-    getCurrentLocation();
+    if (!currentSearchLocation) {
+      getCurrentLocation();
+    } else {
+      fetchPopularDestinations(
+        currentSearchLocation.lat,
+        currentSearchLocation.lon,
+        searchText,
+        selectedPreferences,
+      );
+    }
   }, [searchText, selectedPreferences]);
 
   const searchLocation = async (text: string) => {
@@ -212,6 +230,22 @@ export default function HomeScreen() {
       setAddress(geoAddress[0]);
     }
 
+    // Update location state with new coordinates
+    setLocation({
+      coords: {
+        latitude: lat,
+        longitude: lon,
+        altitude: null,
+        accuracy: null,
+        altitudeAccuracy: null,
+        heading: null,
+        speed: null,
+      },
+      timestamp: Date.now(),
+    });
+
+    // Store current search location
+    setCurrentSearchLocation({ lat, lon });
     fetchPopularDestinations(lat, lon, searchText, selectedPreferences);
   };
 
@@ -269,12 +303,14 @@ export default function HomeScreen() {
         value={searchText}
         onChangeText={(text) => {
           setSearchText(text);
-          fetchPopularDestinations(
-            location?.coords.latitude ?? 0,
-            location?.coords.longitude ?? 0,
-            text,
-            selectedPreferences,
-          );
+          if (currentSearchLocation) {
+            fetchPopularDestinations(
+              currentSearchLocation.lat,
+              currentSearchLocation.lon,
+              text,
+              selectedPreferences,
+            );
+          }
         }}
         containerStyle={{
           backgroundColor: "#ffffff",

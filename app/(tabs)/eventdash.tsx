@@ -23,7 +23,7 @@ import NavigationDrawer from "../../components/Drawer";
 import axios from "axios";
 import { useAuth } from "@/context/AuthProvider";
 import * as Location from "expo-location";
-import LoadingOverlay from "../loadingoverlay";
+import LoadingOverlay from "../../components/loadingoverlay";
 import {
   PanGestureHandler,
   GestureHandlerRootView,

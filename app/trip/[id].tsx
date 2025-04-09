@@ -36,7 +36,7 @@ import {
   GestureHandlerRootView,
   PanGestureHandler,
 } from "react-native-gesture-handler"; // !!! need to replace PanGestureHandler with an alternative !!!
-import LoadingOverlay from "../loadingoverlay";
+import LoadingOverlay from "../../components/loadingoverlay";
 import DropDownPicker from "react-native-dropdown-picker";
 import { LocationProvider, useLocationTypes } from "@/context/LocationProvider";
 
@@ -78,7 +78,7 @@ interface Trip {
 
 export default function TripDetailsScreen() {
   const { user } = useAuth();
-  const { tripId } = useLocalSearchParams();
+  const tripId = useLocalSearchParams().id;
   const router = useRouter();
 
   const [trip, setTrip] = useState<Trip | null>(null);
@@ -150,7 +150,6 @@ export default function TripDetailsScreen() {
     culture: ["museum", "gallery", "theater", "theatre", "cultural", "art"],
     sports: ["sports", "gym", "fitness", "stadium", "arena"],
   };
-
   const GOOGLE_MAPS_API_KEY = process.env.EXPO_PUBLIC_API_KEY;
   useEffect(() => {
     fetchTripDetails();
@@ -814,9 +813,6 @@ export default function TripDetailsScreen() {
             <Text className="text-lg font-bold text-black">
               Trip: {trip?.name || "Loading..."}
             </Text>
-            <TouchableOpacity>
-              <UserCircle size={28} color="black" />
-            </TouchableOpacity>
           </View>
 
           {/* 📌 Trip Destination */}
@@ -874,7 +870,7 @@ export default function TripDetailsScreen() {
                 participants.map((participant) => (
                   <View
                     key={participant.id}
-                    className="bg-orange-300 px-3 py-3 rounded-full m-1"
+                    className="bg-purple-300 px-3 py-3 rounded-full m-1"
                   >
                     <Text className="text-sm">{participant.fullName}</Text>
                   </View>
@@ -938,7 +934,7 @@ export default function TripDetailsScreen() {
         {/* 📌 Floating Action Buttons */}
         <View className="flex-row justify-around my-6 p-6">
           <TouchableOpacity
-            className="bg-orange-500 px-6 py-3 rounded-full shadow-lg flex-row items-center"
+            className="bg-blue-400 px-6 py-3 rounded-full shadow-lg flex-row items-center"
             onPress={() => {
               if (!trip?.bestLocation) {
                 Alert.alert("Error", "Find the best location first.");
@@ -959,14 +955,14 @@ export default function TripDetailsScreen() {
           </TouchableOpacity>
 
           <TouchableOpacity
-            className="bg-orange-300 px-6 py-3 rounded-full shadow-lg flex-row items-center"
+            className="bg-purple-300 px-6 py-3 rounded-full shadow-lg flex-row items-center"
             onPress={startTrip}
           >
             <Play size={28} color="white" />
           </TouchableOpacity>
 
           <TouchableOpacity
-            className="bg-gray-300 px-6 py-3 rounded-full shadow-lg flex-row items-center"
+            className="bg-gray-300 px-3 py-3 rounded-full shadow-lg flex-row items-center mr-2"
             onPress={handleFindBestLocation}
             disabled={loading}
           >
@@ -1018,7 +1014,7 @@ export default function TripDetailsScreen() {
               />
 
               <TouchableOpacity
-                className="bg-orange-500 py-4 w-full rounded-2xl mt-6 shadow-md"
+                className="bg-blue-500 py-4 w-full rounded-2xl mt-6 shadow-md"
                 onPress={savePreferences}
               >
                 <Text className="text-white font-bold text-center text-lg">
@@ -1027,7 +1023,7 @@ export default function TripDetailsScreen() {
               </TouchableOpacity>
 
               <TouchableOpacity
-                className="bg-orange-500 py-4 w-full rounded-2xl mt-4 shadow-md"
+                className="bg-purple-500 py-4 w-full rounded-2xl mt-4 shadow-md"
                 onPress={() => {
                   setPreferenceModalVisible(false);
                   setMapModalVisible(true);

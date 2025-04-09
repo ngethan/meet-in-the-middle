@@ -24,7 +24,7 @@ import {
 } from "lucide-react-native";
 import { useAuth } from "@/context/AuthProvider";
 import { supabase } from "@/lib/supabase";
-import LoadingOverlay from "../loadingoverlay";
+import LoadingOverlay from "../../components/loadingoverlay";
 import moment from "moment";
 import DateTimePicker from "@react-native-community/datetimepicker";
 
@@ -289,10 +289,6 @@ export default function PlaceScreen() {
         ) : (
           <Text className="text-lg font-bold text-gray-800">Loading...</Text>
         )}
-
-        <TouchableOpacity onPress={() => router.push("/profile")}>
-          <UserCircle2Icon strokeWidth={1.5} size={32} color="black" />
-        </TouchableOpacity>
       </View>
 
       {loading ? (

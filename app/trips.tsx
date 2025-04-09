@@ -217,12 +217,12 @@ export default function TripsScreen() {
 
       {/* 📌 Floating Action Button to Create New Trip */}
       <TouchableOpacity
-        className="absolute bottom-20 right-6 bg-orange-500 w-20 h-20 rounded-full flex items-center justify-center shadow-lg"
+        className="absolute bottom-20 right-6 bg-blue-500 w-20 h-20 rounded-full flex items-center justify-center shadow-lg"
         onPress={() => {
           setTripModalVisible(true);
         }}
       >
-        <Plus size={30} color="white" />
+        {/* <Plus size={30} color="white" /> */}
         <Text className="text-white font-bold text-center text-sm">
           Create Trips
         </Text>

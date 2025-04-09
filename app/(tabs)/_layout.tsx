@@ -1,5 +1,5 @@
 import { Tabs } from "expo-router";
-import { Home, MessageSquare, Calendar } from "lucide-react-native";
+import { Home, Plane, Calendar } from "lucide-react-native";
 import { View, Dimensions } from "react-native";
 
 const { width } = Dimensions.get("window");
@@ -39,19 +39,21 @@ export default function TabsNavigator() {
           ),
         }}
       />
+
       <Tabs.Screen
-        name="chat"
+        name="tripspage"
         options={{
           headerShown: false,
           tabBarIcon: ({ focused }: { focused: boolean }) => (
             <View
               className={`p-3 rounded-full ${focused ? "bg-white/20" : ""}`}
             >
-              <MessageSquare size={24} color="white" strokeWidth={2} />
+              <Plane size={24} color="white" strokeWidth={2} />
             </View>
           ),
         }}
       />
+
       <Tabs.Screen
         name="eventdash"
         options={{
@@ -67,4 +69,20 @@ export default function TabsNavigator() {
       />
     </Tabs>
   );
+}
+
+{
+  /* <Tabs.Screen
+        name="chat"
+        options={{
+          headerShown: false,
+          tabBarIcon: ({ focused }: { focused: boolean }) => (
+            <View
+              className={`p-3 rounded-full ${focused ? "bg-white/20" : ""}`}
+            >
+              <MessageSquare size={24} color="white" strokeWidth={2} />
+            </View>
+          ),
+        }}
+      /> */
 }

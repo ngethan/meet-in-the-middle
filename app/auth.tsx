@@ -13,7 +13,7 @@ import { useRouter } from "expo-router";
 import { supabase } from "../lib/supabase";
 import * as AppleAuthentication from "expo-apple-authentication";
 import { LinearGradient } from "expo-linear-gradient";
-import LoadingOverlay from "./loadingoverlay";
+import LoadingOverlay from "../components/loadingoverlay";
 
 AppState.addEventListener("change", (state) => {
   if (state === "active") {

@@ -76,6 +76,10 @@ export default function RootLayout() {
             options={{ title: "Trip Details", headerShown: false }}
           />
           <Stack.Screen
+            name="chatbox/[id]"
+            options={{ title: "Chat Box", headerShown: false }}
+          />
+          <Stack.Screen
             name="profile"
             options={{ title: "Profile", headerShown: false }}
           />

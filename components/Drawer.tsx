@@ -48,7 +48,7 @@ export default function NavigationDrawer({
       {/* 📌 Overlay with Blur Effect */}
       {isOpen && (
         <TouchableOpacity
-          className="absolute top-0 left-0 w-full h-full bg-black/40 backdrop-blur-sm z-10"
+          className="absolute top-0 left-0 w-full h-full backdrop-blur-sm z-10"
           onPress={onClose}
           activeOpacity={1}
         />
@@ -57,11 +57,11 @@ export default function NavigationDrawer({
       {/* 📌 Sliding Drawer */}
       <Animated.View
         style={{ transform: [{ translateX: slideAnim }] }}
-        className="absolute left-0 top-0 w-[70%] h-full bg-[#1D3D47] z-20 shadow-lg rounded-tr-3xl rounded-br-3xl px-6 py-16"
+        className="absolute left-0 top-0 h-full bg-white z-20 shadow-lg rounded-tr-3xl rounded-br-3xl px-6 py-16"
       >
-        <View className="flex-1 bg-neutral-50">
-          <View className="flex-row justify-between items-center px-ios-4 pt-14 pb-4 bg-white/80 backdrop-blur-lg border-b border-neutral-100">
-            <AnimatedIcon
+        <View className="flex-1 bg-white">
+          <View className="flex-row justify-between items-center px-ios-4 pt-14 pb-4 bg-white border-b border-neutral-100">
+            {/* <AnimatedIcon
               size={24}
               color="#007AFF"
               style={{
@@ -74,7 +74,7 @@ export default function NavigationDrawer({
                   },
                 ],
               }}
-            />
+            /> */}
           </View>
 
           <View className="p-ios-4">
