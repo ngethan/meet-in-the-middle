@@ -36,6 +36,8 @@ export default function MapScreen() {
   const [parsedParticipants, setParsedParticipants] = useState([]);
   const [selectedUser, setSelectedUser] = useState("All");
   const [userTravelTimes, setUserTravelTimes] = useState([]);
+  const [routeCoords, setRouteCoords] = useState([]);
+  const [transitSteps, setTransitSteps] = useState([]);
   const router = useRouter();
 
   useEffect(() => {
@@ -105,12 +107,34 @@ export default function MapScreen() {
 
       if (response.data.routes.length > 0) {
         const points = response.data.routes[0].overview_polyline.points;
-        return decodePolyline(points);
+        const decodedCoords = decodePolyline(points);
+        setRouteCoords(decodedCoords);
+        setSelectedMode(mode);
+
+        if (mode === "transit") {
+          const steps = response.data.routes[0].legs[0].steps.map((step) => ({
+            instruction: step.html_instructions.replace(/<[^>]*>?/gm, ""),
+            distance: step.distance.text,
+            duration: step.duration.text,
+            travelMode: step.travel_mode,
+            transitDetails: step.transit_details
+              ? {
+                  line: step.transit_details.line.name,
+                  vehicle: step.transit_details.line.vehicle.name,
+                  departureStop: step.transit_details.departure_stop.name,
+                  arrivalStop: step.transit_details.arrival_stop.name,
+                  numStops: step.transit_details.num_stops,
+                }
+              : null,
+          }));
+          setTransitSteps(steps);
+        } else {
+          setTransitSteps([]);
+        }
       }
     } catch (error) {
       console.error(`Error fetching route for ${mode}:`, error);
     }
-    return [];
   }
 
   function decodePolyline(encoded) {
@@ -235,34 +259,66 @@ export default function MapScreen() {
                 />
               ))}
 
-        {selectedUser === "All"
-          ? routes.map((route, index) => (
-              <Polyline
-                key={index}
-                coordinates={route}
-                strokeWidth={4}
-                strokeColor={routeColors[index % routeColors.length]}
-              />
-            ))
-          : userTravelTimes.map((_, index) => (
-              <Polyline
-                key={index}
-                coordinates={routes[index]}
-                strokeWidth={4}
-                strokeColor="blue"
-              />
-            ))}
+        {routeCoords.length > 0 && (
+          <Polyline
+            coordinates={routeCoords}
+            strokeWidth={4}
+            strokeColor="blue"
+          />
+        )}
       </MapView>
 
-      {/* Travel Times Info */}
+      {/* Travel Modes */}
       {selectedUser !== "All" && (
         <View style={styles.travelTimesContainer}>
           <ScrollView horizontal showsHorizontalScrollIndicator={false}>
             {userTravelTimes.map((item, index) => (
-              <View key={index} style={styles.travelTimeCard}>
+              <TouchableOpacity
+                key={index}
+                style={[
+                  styles.travelTimeCard,
+                  selectedMode === item.mode ? styles.selectedCard : null,
+                ]}
+                onPress={() =>
+                  fetchRoute(
+                    parsedParticipants.find((p) => p.fullName === selectedUser)
+                      ?.latitude || bestLatitude,
+                    parsedParticipants.find((p) => p.fullName === selectedUser)
+                      ?.longitude || bestLongitude,
+                    bestLatitude,
+                    bestLongitude,
+                    item.mode,
+                  )
+                }
+              >
                 <Text style={styles.travelMode}>{item.mode.toUpperCase()}</Text>
                 <Text>{item.duration}</Text>
                 <Text>{item.distance}</Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </View>
+      )}
+
+      {/* Transit Steps */}
+      {selectedMode === "transit" && transitSteps.length > 0 && (
+        <View style={styles.transitStepsContainer}>
+          <ScrollView>
+            {transitSteps.map((step, index) => (
+              <View key={index} style={styles.transitStep}>
+                <Text style={styles.stepInstruction}>{step.instruction}</Text>
+                <Text style={styles.stepDetail}>
+                  Distance: {step.distance} | Duration: {step.duration}
+                </Text>
+                {step.transitDetails && (
+                  <Text style={styles.transitDetail}>
+                    Take {step.transitDetails.vehicle} (
+                    {step.transitDetails.line}) from{" "}
+                    {step.transitDetails.departureStop} to{" "}
+                    {step.transitDetails.arrivalStop} (
+                    {step.transitDetails.numStops} stops)
+                  </Text>
+                )}
               </View>
             ))}
           </ScrollView>
@@ -335,9 +391,38 @@ const styles = StyleSheet.create({
     marginRight: 10,
     alignItems: "center",
   },
+  selectedCard: {
+    backgroundColor: "#ED8F03",
+  },
   travelMode: {
     fontWeight: "bold",
     marginBottom: 5,
+  },
+  transitStepsContainer: {
+    position: "absolute",
+    bottom: 80,
+    left: 10,
+    right: 10,
+    backgroundColor: "#fff",
+    borderRadius: 8,
+    padding: 10,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  transitStep: {
+    marginBottom: 10,
+  },
+  stepInstruction: {
+    fontWeight: "bold",
+  },
+  stepDetail: {
+    color: "#555",
+  },
+  transitDetail: {
+    color: "#777",
   },
   backButton: {
     position: "absolute",
