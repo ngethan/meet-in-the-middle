@@ -8,7 +8,9 @@ import {
   ScrollView,
   ActivityIndicator,
   Alert,
+  StyleSheet,
 } from "react-native";
+import { Picker } from "@react-native-picker/picker";
 import axios from "axios";
 import { useRouter } from "expo-router";
 
@@ -31,13 +33,11 @@ export default function MapScreen() {
   const [selectedMode, setSelectedMode] = useState("driving");
   const [travelTimes, setTravelTimes] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [searchText, setSearchText] = useState("");
-  const [searchResults, setSearchResults] = useState([]);
-  const [isOverlayVisible, setOverlayVisible] = useState(false);
   const [parsedParticipants, setParsedParticipants] = useState([]);
+  const [selectedUser, setSelectedUser] = useState("All");
+  const [userTravelTimes, setUserTravelTimes] = useState([]);
   const router = useRouter();
 
-  // ✅ Ensure participants is a string before parsing
   useEffect(() => {
     if (typeof participants === "string") {
       try {
@@ -69,7 +69,6 @@ export default function MapScreen() {
     }
   }, [bestLatitude, bestLongitude, parsedParticipants]);
 
-  // Fetch multiple routes (each participant to best location)
   async function fetchRoutes(participants) {
     let fetchedRoutes = [];
     for (const participant of participants) {
@@ -90,7 +89,6 @@ export default function MapScreen() {
     setLoading(false);
   }
 
-  // Fetch a single route (from participant to best locateeion)
   async function fetchRoute(startLat, startLng, endLat, endLng, mode) {
     try {
       const response = await axios.get(
@@ -115,26 +113,89 @@ export default function MapScreen() {
     return [];
   }
 
-  // Decode Polyline to Coordinates
   function decodePolyline(encoded) {
     let points = polyline.decode(encoded);
     return points.map(([lat, lng]) => ({ latitude: lat, longitude: lng }));
   }
 
+  async function fetchUserTravelTimes(user) {
+    const participant = parsedParticipants.find((p) => p.fullName === user);
+    if (!participant) return;
+
+    let times = [];
+    for (const mode of travelModes) {
+      try {
+        const response = await axios.get(
+          `https://maps.googleapis.com/maps/api/directions/json`,
+          {
+            params: {
+              origin: `${participant.latitude},${participant.longitude}`,
+              destination: `${bestLatitude},${bestLongitude}`,
+              key: GOOGLE_MAPS_API_KEY,
+              mode: mode,
+            },
+          },
+        );
+
+        if (response.data.routes && response.data.routes.length > 0) {
+          const route = response.data.routes[0];
+          const distanceInMiles = (
+            route.legs[0].distance.value / 1609.34
+          ).toFixed(2);
+          times.push({
+            mode,
+            duration: route.legs[0].duration.text,
+            distance: `${distanceInMiles} miles`,
+          });
+        } else {
+          times.push({ mode, duration: "N/A", distance: "N/A" });
+        }
+      } catch (error) {
+        console.warn(`Warning: No route found for ${mode}.`);
+        times.push({ mode, duration: "N/A", distance: "N/A" });
+      }
+    }
+    setUserTravelTimes(times);
+  }
+
+  useEffect(() => {
+    if (selectedUser !== "All") {
+      fetchUserTravelTimes(selectedUser);
+    }
+  }, [selectedUser]);
+
   if (loading) {
     return (
-      <View className="flex-1 justify-center items-center bg-white">
+      <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#ED8F03" />
-        <Text className="mt-4 text-gray-700">Loading Routes...</Text>
+        <Text style={styles.loadingText}>Loading Routes...</Text>
       </View>
     );
   }
 
   return (
-    <View className="flex-1 bg-white">
+    <View style={styles.container}>
+      {/* Dropdown Menu */}
+      <View style={styles.dropdownContainer}>
+        <Picker
+          selectedValue={selectedUser}
+          onValueChange={(itemValue) => setSelectedUser(itemValue)}
+          style={styles.picker}
+        >
+          <Picker.Item label="All" value="All" />
+          {parsedParticipants.map((participant, index) => (
+            <Picker.Item
+              key={index}
+              label={participant.fullName}
+              value={participant.fullName}
+            />
+          ))}
+        </Picker>
+      </View>
+
       {/* Map View */}
       <MapView
-        style={{ width: "100%", height: "100%" }}
+        style={styles.map}
         initialRegion={{
           latitude: bestLatitude,
           longitude: bestLongitude,
@@ -142,46 +203,152 @@ export default function MapScreen() {
           longitudeDelta: 0.1,
         }}
       >
-        {/* Best Location Marker */}
         <Marker
           coordinate={{ latitude: bestLatitude, longitude: bestLongitude }}
           title="Best Location"
           pinColor="red"
         />
 
-        {/* Participant Markers */}
-        {parsedParticipants.map((participant, index) => (
-          <Marker
-            key={index}
-            coordinate={{
-              latitude: participant.latitude,
-              longitude: participant.longitude,
-            }}
-            title={participant.fullName}
-            pinColor={routeColors[index % routeColors.length]}
-          />
-        ))}
+        {selectedUser === "All"
+          ? parsedParticipants.map((participant, index) => (
+              <Marker
+                key={index}
+                coordinate={{
+                  latitude: participant.latitude,
+                  longitude: participant.longitude,
+                }}
+                title={participant.fullName}
+                pinColor={routeColors[index % routeColors.length]}
+              />
+            ))
+          : parsedParticipants
+              .filter((p) => p.fullName === selectedUser)
+              .map((participant, index) => (
+                <Marker
+                  key={index}
+                  coordinate={{
+                    latitude: participant.latitude,
+                    longitude: participant.longitude,
+                  }}
+                  title={participant.fullName}
+                  pinColor="blue"
+                />
+              ))}
 
-        {/* Draw Multiple Routes with Different Colors */}
-        {routes.map((route, index) => (
-          <Polyline
-            key={index}
-            coordinates={route}
-            strokeWidth={4}
-            strokeColor={routeColors[index % routeColors.length]} // Assign a unique color
-          />
-        ))}
+        {selectedUser === "All"
+          ? routes.map((route, index) => (
+              <Polyline
+                key={index}
+                coordinates={route}
+                strokeWidth={4}
+                strokeColor={routeColors[index % routeColors.length]}
+              />
+            ))
+          : userTravelTimes.map((_, index) => (
+              <Polyline
+                key={index}
+                coordinates={routes[index]}
+                strokeWidth={4}
+                strokeColor="blue"
+              />
+            ))}
       </MapView>
 
+      {/* Travel Times Info */}
+      {selectedUser !== "All" && (
+        <View style={styles.travelTimesContainer}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+            {userTravelTimes.map((item, index) => (
+              <View key={index} style={styles.travelTimeCard}>
+                <Text style={styles.travelMode}>{item.mode.toUpperCase()}</Text>
+                <Text>{item.duration}</Text>
+                <Text>{item.distance}</Text>
+              </View>
+            ))}
+          </ScrollView>
+        </View>
+      )}
+
       {/* Back Button */}
-      <View className="absolute top-2r left-5">
-        <TouchableOpacity
-          className="bg-orange-700 px-4 py-3 top-20 rounded-lg shadow-lg"
-          onPress={() => router.back()}
-        >
-          <Text className="text-white font-bold">Back</Text>
-        </TouchableOpacity>
-      </View>
+      <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+        <Text style={styles.backButtonText}>Back</Text>
+      </TouchableOpacity>
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: "#fff",
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#fff",
+  },
+  loadingText: {
+    marginTop: 10,
+    color: "#555",
+  },
+  dropdownContainer: {
+    position: "absolute",
+    top: 10,
+    left: 10,
+    right: 10,
+    zIndex: 10,
+    backgroundColor: "#fff",
+    borderRadius: 8,
+    padding: 5,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  picker: {
+    height: 40,
+    width: "100%",
+  },
+  map: {
+    flex: 1,
+  },
+  travelTimesContainer: {
+    position: "absolute",
+    bottom: 10,
+    left: 10,
+    right: 10,
+    backgroundColor: "#fff",
+    borderRadius: 8,
+    padding: 10,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  travelTimeCard: {
+    backgroundColor: "#f0f0f0",
+    borderRadius: 8,
+    padding: 10,
+    marginRight: 10,
+    alignItems: "center",
+  },
+  travelMode: {
+    fontWeight: "bold",
+    marginBottom: 5,
+  },
+  backButton: {
+    position: "absolute",
+    top: 50,
+    left: 10,
+    backgroundColor: "#ED8F03",
+    padding: 10,
+    borderRadius: 8,
+  },
+  backButtonText: {
+    color: "#fff",
+    fontWeight: "bold",
+  },
+});
