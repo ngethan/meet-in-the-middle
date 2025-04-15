@@ -273,7 +273,7 @@ export default function MapScreen() {
     <GestureHandlerRootView style={styles.container}>
       {/* Map */}
       <MapView
-        style={[styles.map, selectedMode === "transit" && styles.mapTransit]}
+        style={styles.map}
         initialRegion={{
           latitude: currentLocation?.latitude || null, // Default WashU Location
           longitude: currentLocation?.longitude || null,
@@ -298,9 +298,6 @@ export default function MapScreen() {
             strokeColor="blue"
           />
         )}
-        {/* <View style={styles.buttonContainer}>
-          <Button title="Back" onPress={() => router.back()} />
-        </View> */}
 
         {/* Back Button */}
         <View className="absolute top-2r left-5">
@@ -311,44 +308,70 @@ export default function MapScreen() {
             <Text className="text-white font-bold">Back</Text>
           </TouchableOpacity>
         </View>
+      </MapView>
+
+      {/* Bottom Section */}
+      <View style={styles.bottomContainer}>
+        {/* Change Your Location Button */}
         <TouchableOpacity
           style={styles.changeLocationButton}
           onPress={() => setOverlayVisible(true)}
         >
           <Text style={styles.changeLocationText}>Change Your Location</Text>
         </TouchableOpacity>
-      </MapView>
 
-      {/* Bottom Info Bar */}
-      <View style={styles.infoContainer}>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.scrollContainer}
-        >
-          {travelTimes.map((item, index) => (
-            <TouchableOpacity
-              key={index}
-              style={[
-                styles.card,
-                selectedMode === item.mode ? styles.selectedCard : null,
-              ]}
-              onPress={() =>
-                fetchRoute(
-                  currentLocation?.latitude || 0,
-                  currentLocation?.longitude || 0,
-                  destination?.latitude || 0,
-                  destination?.longitude || 0,
-                  item.mode,
-                )
-              }
-            >
-              <Text style={styles.modeText}>{item.mode.toUpperCase()}</Text>
-              <Text style={styles.durationText}>{item.duration}</Text>
-              <Text style={styles.distanceText}>{item.distance}</Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
+        {/* Transit Steps */}
+        {selectedMode === "transit" && transitSteps.length > 0 && (
+          <View style={styles.stepsContainer}>
+            <ScrollView>
+              {transitSteps.map((step, index) => (
+                <View key={index} style={styles.step}>
+                  <Text style={styles.stepInstruction}>{step.instruction}</Text>
+                  <Text style={styles.stepDetail}>
+                    Distance: {step.distance} | Duration: {step.duration}
+                  </Text>
+                  {step.transitDetails && (
+                    <Text style={styles.transitDetail}>
+                      Take {step.transitDetails.vehicle} (
+                      {step.transitDetails.line}) from{" "}
+                      {step.transitDetails.departureStop} to{" "}
+                      {step.transitDetails.arrivalStop} (
+                      {step.transitDetails.numStops} stops)
+                    </Text>
+                  )}
+                </View>
+              ))}
+            </ScrollView>
+          </View>
+        )}
+
+        {/* Travel Modes */}
+        <View style={styles.travelTimesContainer}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+            {travelTimes.map((item, index) => (
+              <TouchableOpacity
+                key={index}
+                style={[
+                  styles.travelTimeCard,
+                  selectedMode === item.mode ? styles.selectedCard : null,
+                ]}
+                onPress={() =>
+                  fetchRoute(
+                    currentLocation?.latitude || 0,
+                    currentLocation?.longitude || 0,
+                    destination?.latitude || 0,
+                    destination?.longitude || 0,
+                    item.mode,
+                  )
+                }
+              >
+                <Text style={styles.travelMode}>{item.mode.toUpperCase()}</Text>
+                <Text style={styles.durationText}>{item.duration}</Text>
+                <Text style={styles.distanceText}>{item.distance}</Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </View>
       </View>
 
       {/* Overlay Modal */}
@@ -384,33 +407,6 @@ export default function MapScreen() {
           </View>
         </PanGestureHandler>
       </Modal>
-
-      {/* Transit Steps */}
-      {selectedMode === "transit" && transitSteps.length > 0 && (
-        <View style={styles.stepsContainer}>
-          <FlatList
-            data={transitSteps}
-            keyExtractor={(item, index) => index.toString()}
-            renderItem={({ item }) => (
-              <View style={styles.step}>
-                <Text style={styles.stepInstruction}>{item.instruction}</Text>
-                <Text style={styles.stepDetail}>
-                  Distance: {item.distance} | Duration: {item.duration}
-                </Text>
-                {item.transitDetails && (
-                  <Text style={styles.transitDetail}>
-                    Take {item.transitDetails.vehicle} (
-                    {item.transitDetails.line}) from{" "}
-                    {item.transitDetails.departureStop} to{" "}
-                    {item.transitDetails.arrivalStop} (
-                    {item.transitDetails.numStops} stops)
-                  </Text>
-                )}
-              </View>
-            )}
-          />
-        </View>
-      )}
     </GestureHandlerRootView>
   );
 }
@@ -427,19 +423,13 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
   },
   map: {
-    width: "100%",
-    height: "85%",
-  },
-  mapTransit: {
-    height: "70%", // when transit is selected
+    flex: 1,
   },
   changeLocationButton: {
-    position: "absolute",
-    bottom: 15,
-    right: 10,
     backgroundColor: "#ED8F03",
     padding: 10,
     borderRadius: 8,
+    alignSelf: "flex-end",
   },
   changeLocationText: {
     color: "#fff",
@@ -535,5 +525,71 @@ const styles = StyleSheet.create({
     position: "absolute",
     top: 50,
     left: 10,
+  },
+  travelTimesContainer: {
+    backgroundColor: "#fff",
+    borderRadius: 8,
+    padding: 10,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  travelTimeCard: {
+    backgroundColor: "#f0f0f0",
+    borderRadius: 8,
+    padding: 10,
+    marginRight: 10,
+    alignItems: "center",
+  },
+  selectedCard: {
+    backgroundColor: "#ED8F03",
+  },
+  travelMode: {
+    fontWeight: "bold",
+    marginBottom: 5,
+  },
+  durationText: {
+    fontSize: 14,
+    color: "#555",
+  },
+  distanceText: {
+    fontSize: 14,
+    color: "#777",
+  },
+  stepsContainer: {
+    backgroundColor: "#fff",
+    padding: 15,
+    height: 150,
+    borderTopWidth: 1,
+    borderColor: "#ddd",
+  },
+  step: {
+    marginBottom: 10,
+    borderBottomWidth: 1,
+    borderColor: "#ddd",
+    paddingBottom: 5,
+  },
+  stepInstruction: {
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  stepDetail: {
+    fontSize: 12,
+    color: "#666",
+  },
+  transitDetail: {
+    fontSize: 12,
+    color: "#444",
+    marginTop: 5,
+  },
+  bottomContainer: {
+    position: "absolute",
+    bottom: 40,
+    left: 10,
+    right: 10,
+    flexDirection: "column",
+    gap: 10,
   },
 });
