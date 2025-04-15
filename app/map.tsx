@@ -10,7 +10,6 @@ import {
   Alert,
   StyleSheet,
 } from "react-native";
-import { Picker } from "@react-native-picker/picker";
 import axios from "axios";
 import { useRouter } from "expo-router";
 import DropDownPicker from "react-native-dropdown-picker";
@@ -113,6 +112,14 @@ export default function MapScreen() {
       })),
     ]);
   }, [parsedParticipants]);
+
+  useEffect(() => {
+    setTransitSteps([]);
+
+    if (selectedUser !== "All") {
+      fetchUserTravelTimes(selectedUser);
+    }
+  }, [selectedUser]);
 
   async function fetchRoutes(participants, mode = "driving") {
     let fetchedRoutes = [];
@@ -231,12 +238,6 @@ export default function MapScreen() {
     setUserTravelTimes(times);
   }
 
-  useEffect(() => {
-    if (selectedUser !== "All") {
-      fetchUserTravelTimes(selectedUser);
-    }
-  }, [selectedUser]);
-
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
@@ -322,29 +323,33 @@ export default function MapScreen() {
         </View>
 
         {/* Transit Steps */}
-        {selectedMode === "transit" && transitSteps.length > 0 && (
-          <View style={styles.stepsContainer}>
-            <ScrollView>
-              {transitSteps.map((step, index) => (
-                <View key={index} style={styles.step}>
-                  <Text style={styles.stepInstruction}>{step.instruction}</Text>
-                  <Text style={styles.stepDetail}>
-                    Distance: {step.distance} | Duration: {step.duration}
-                  </Text>
-                  {step.transitDetails && (
-                    <Text style={styles.transitDetail}>
-                      Take {step.transitDetails.vehicle} (
-                      {step.transitDetails.line}) from{" "}
-                      {step.transitDetails.departureStop} to{" "}
-                      {step.transitDetails.arrivalStop} (
-                      {step.transitDetails.numStops} stops)
+        {selectedUser !== "All" &&
+          selectedMode === "transit" &&
+          transitSteps.length > 0 && (
+            <View style={styles.stepsContainer}>
+              <ScrollView>
+                {transitSteps.map((step, index) => (
+                  <View key={index} style={styles.step}>
+                    <Text style={styles.stepInstruction}>
+                      {step.instruction}
                     </Text>
-                  )}
-                </View>
-              ))}
-            </ScrollView>
-          </View>
-        )}
+                    <Text style={styles.stepDetail}>
+                      Distance: {step.distance} | Duration: {step.duration}
+                    </Text>
+                    {step.transitDetails && (
+                      <Text style={styles.transitDetail}>
+                        Take {step.transitDetails.vehicle} (
+                        {step.transitDetails.line}) from{" "}
+                        {step.transitDetails.departureStop} to{" "}
+                        {step.transitDetails.arrivalStop} (
+                        {step.transitDetails.numStops} stops)
+                      </Text>
+                    )}
+                  </View>
+                ))}
+              </ScrollView>
+            </View>
+          )}
 
         {/* Travel Modes */}
         <View style={styles.travelTimesContainer}>
