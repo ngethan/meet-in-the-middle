@@ -10,13 +10,20 @@ import {
   TextInput,
   Dimensions,
 } from "react-native";
-import { FontAwesome } from "@expo/vector-icons";
+import {
+  Menu,
+  MapPin,
+  UserCircle,
+  ArrowLeft,
+  ChevronDown,
+  UserCircle2Icon,
+} from "lucide-react-native";
 import { useRouter } from "expo-router";
 import NavigationDrawer from "../../components/Drawer";
 import axios from "axios";
 import { useAuth } from "@/context/AuthProvider";
 import * as Location from "expo-location";
-import LoadingOverlay from "../loadingoverlay";
+import LoadingOverlay from "../../components/loadingoverlay";
 import {
   PanGestureHandler,
   GestureHandlerRootView,
@@ -34,7 +41,8 @@ export default function EventDashBoard() {
     null,
   );
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  const [address, setAddress] = useState(null);
+  const [address, setAddress] =
+    useState<Location.LocationGeocodedAddress | null>(null);
   const [events, setEvents] = useState([]);
   const [searchResults, setSearchResults] = useState([]);
   const [searchText, setSearchText] = useState("");
@@ -63,7 +71,7 @@ export default function EventDashBoard() {
       );
 
       // Mapping data from Ticketmaster response to a similar format as your existing places data
-      const events = response.data._embedded.events.map((event) => ({
+      const events = response.data._embedded.events.map((event: any) => ({
         id: event.id,
         title: event.name,
         description:
@@ -81,7 +89,9 @@ export default function EventDashBoard() {
       }));
 
       // Sort events by time
-      const sortedEvents = events.sort((a, b) => a.eventTime - b.eventTime);
+      const sortedEvents = events.sort(
+        (a: any, b: any) => a.eventTime - b.eventTime,
+      );
 
       setEvents(sortedEvents); // Set sorted events
     } catch (error) {
@@ -131,7 +141,7 @@ export default function EventDashBoard() {
   }, []);
 
   // Search new starting location
-  const searchLocation = async (text) => {
+  const searchLocation = async (text: string) => {
     try {
       const response = await axios.get(
         `https://maps.googleapis.com/maps/api/place/autocomplete/json`,
@@ -152,7 +162,7 @@ export default function EventDashBoard() {
     }
   };
 
-  const changeLocation = async (location) => {
+  const changeLocation = async (location: any) => {
     let response = await axios.get(
       `https://maps.googleapis.com/maps/api/place/details/json`,
       {
@@ -207,12 +217,11 @@ export default function EventDashBoard() {
   return (
     <View className="flex-1 bg-gray-100">
       {/* Header */}
-      <View className="flex-row justify-between items-center px-6 py-16 bg-orange-400 shadow-md">
+      <View className="flex-row justify-between items-center px-6 pt-16 pb-4 bg-blue-400 shadow-md">
         <TouchableOpacity onPress={toggleDrawer}>
-          <FontAwesome name="bars" size={32} color="black" />
+          <Menu size={32} color="black" />
         </TouchableOpacity>
 
-        {/* Clickable Location Text */}
         <TouchableOpacity
           onPress={() => {
             setOverlayVisible(true);
@@ -224,7 +233,7 @@ export default function EventDashBoard() {
         </TouchableOpacity>
 
         <TouchableOpacity onPress={() => router.push("/profile")}>
-          <FontAwesome name="user-circle" size={32} color="black" />
+          <UserCircle2Icon strokeWidth={1.5} size={32} color="black" />
         </TouchableOpacity>
       </View>
 
@@ -277,7 +286,7 @@ export default function EventDashBoard() {
                 {/* Search Results List */}
                 <FlatList
                   data={searchResults}
-                  keyExtractor={(item) => item.place_id}
+                  keyExtractor={(item: any) => item.place_id}
                   renderItem={({ item }) => (
                     <TouchableOpacity
                       onPress={() => {

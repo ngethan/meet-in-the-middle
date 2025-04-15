@@ -3,7 +3,6 @@ import {
   View,
   Text,
   Image,
-  StyleSheet,
   Dimensions,
   ActivityIndicator,
   TextInput,
@@ -13,17 +12,21 @@ import {
   Modal,
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
-// import { Snackbar } from 'react-native-paper';
 import Carousel from "react-native-reanimated-carousel";
 import axios from "axios";
-import FontAwesome from "@expo/vector-icons/FontAwesome";
+import {
+  ArrowLeft,
+  Send,
+  Plus,
+  MapPin,
+  Menu,
+  UserCircle2Icon,
+} from "lucide-react-native";
 import { useAuth } from "@/context/AuthProvider";
 import { supabase } from "@/lib/supabase";
-import LoadingOverlay from "../loadingoverlay";
+import LoadingOverlay from "../../components/loadingoverlay";
 import moment from "moment";
 import DateTimePicker from "@react-native-community/datetimepicker";
-
-const { width, height } = Dimensions.get("window"); // Get screen dimensions
 
 const GOOGLE_MAPS_API_KEY = process.env.EXPO_PUBLIC_API_KEY;
 
@@ -35,14 +38,18 @@ const randomUUID = () =>
   });
 
 export default function PlaceScreen() {
-  const { id } = useLocalSearchParams(); // Get place ID from URL params
+  const { id } = useLocalSearchParams();
   const [place, setPlace] = useState<{
     id: string;
     title: string;
     description: string;
     images: string[];
     types: [];
-    reviews: [];
+    reviews: {
+      author_name: string;
+      rating: number;
+      text: string;
+    }[];
     latitude: string;
     longitude: string;
     address: string;
@@ -52,8 +59,8 @@ export default function PlaceScreen() {
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [newTripName, setNewTripName] = useState("");
   const { user } = useAuth();
-  const [selectedChat, setSelectedChat] = useState(null);
-  const [chats, setChats] = useState([]);
+  const [selectedChat, setSelectedChat] = useState<any>(null);
+  const [chats, setChats] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [visible, setVisible] = useState(false);
   const [tripModalVisible, setTripModalVisible] = useState(false);
@@ -112,7 +119,6 @@ export default function PlaceScreen() {
   async function fetchChats() {
     setIsModalVisible(true);
     try {
-      // ✅ Step 1: Get all chat groups where the user is a member
       const { data: userChats, error: userChatsError } = await supabase
         .from("conversationParticipants")
         .select("conversationId")
@@ -124,60 +130,61 @@ export default function PlaceScreen() {
         );
       }
 
-      // Extract chat IDs
       const chatIds = userChats?.map((item) => item.conversationId) || [];
 
       if (chatIds.length === 0) {
-        setChats([]); // If user isn't in any chats, reset state
+        setChats([]);
         setIsLoading(false);
         return;
       }
 
-      // ✅ Step 2: Fetch chat group details
       const { data: chatsData, error: chatsError } = await supabase
         .from("conversations")
         .select("*")
         .in("id", chatIds)
         .order("lastDate", { ascending: false });
 
-      // Fetch participants' names
-      const chatsWithParticipants = await Promise.all(
-        chatsData.map(async (chat: any) => {
-          const { data: participants, error: participantsError } =
-            await supabase
-              .from("conversationParticipants")
-              .select("userId")
-              .eq("conversationId", chat.id);
+      useEffect(() => {
+        if (chatsData) {
+          Promise.all(
+            chatsData.map(async (chat: any) => {
+              const { data: participants, error: participantsError } =
+                await supabase
+                  .from("conversationParticipants")
+                  .select("userId")
+                  .eq("conversationId", chat.id);
 
-          if (participantsError) {
-            throw new Error(
-              `Error fetching participants: ${participantsError.message}`,
-            );
-          }
-
-          const participantsNames = await Promise.all(
-            participants.map(async (participant: any) => {
-              const { data: userData, error: userError } = await supabase
-                .from("users")
-                .select("fullName")
-                .eq("id", participant.userId)
-                .single();
-
-              if (userError) {
+              if (participantsError) {
                 throw new Error(
-                  `Error fetching user data: ${userError.message}`,
+                  `Error fetching participants: ${participantsError.message}`,
                 );
               }
 
-              return userData.fullName;
+              const participantsNames = await Promise.all(
+                participants.map(async (participant: any) => {
+                  const { data: userData, error: userError } = await supabase
+                    .from("users")
+                    .select("fullName")
+                    .eq("id", participant.userId)
+                    .single();
+
+                  if (userError) {
+                    throw new Error(
+                      `Error fetching user data: ${userError.message}`,
+                    );
+                  }
+
+                  return userData.fullName;
+                }),
+              );
+
+              return { ...chat, participants: participantsNames };
             }),
-          );
-
-          return { ...chat, participants: participantsNames };
-        }),
-      );
-
-      setChats(chatsWithParticipants || []);
+          ).then((data) => {
+            setChats(data);
+          });
+        }
+      }, [chatsData]);
 
       if (chatsError) {
         throw new Error(
@@ -189,7 +196,11 @@ export default function PlaceScreen() {
     }
   }
 
-  const handleDateChange = (event, selectedDate, isStart) => {
+  const handleDateChange = (
+    event: any,
+    selectedDate: Date | undefined,
+    isStart: boolean,
+  ) => {
     if (selectedDate) {
       if (isStart) {
         setStartDate(selectedDate);
@@ -204,6 +215,10 @@ export default function PlaceScreen() {
   // Handle creating a trip at this location
   const handleCreateTrip = async () => {
     setIsLoading(true);
+    if (!place) {
+      return Alert.alert("Error", "Place information not available.");
+    }
+
     if (!place.title.trim()) {
       return Alert.alert("Error", "Trip name required.");
     }
@@ -264,11 +279,16 @@ export default function PlaceScreen() {
 
   return (
     <View className="flex-1 bg-white">
-      {/* Header */}
-      <View className="flex-row justify-between items-center px-6 py-12 bg-orange-400 shadow-md">
-        <TouchableOpacity onPress={() => router.back()} className="p-2">
-          <FontAwesome name="arrow-left" size={28} color="black" />
+      <View className="flex-row justify-between items-center px-6 pt-16 pb-4 bg-blue-400 shadow-md">
+        <TouchableOpacity onPress={() => router.back()}>
+          <ArrowLeft size={32} color="black" />
         </TouchableOpacity>
+
+        {place ? (
+          <Text className="text-lg font-bold text-white">{place.title}</Text>
+        ) : (
+          <Text className="text-lg font-bold text-gray-800">Loading...</Text>
+        )}
       </View>
 
       {loading ? (
@@ -308,7 +328,7 @@ export default function PlaceScreen() {
           </View>
 
           <TouchableOpacity
-            className="bg-blue-600 py-3 mx-5 rounded-xl shadow-lg flex items-center justify-center mt-4"
+            className="bg-indigo-400 py-3 mx-5 rounded-xl shadow-lg flex items-center justify-center mt-4"
             onPress={() => router.push(`/map/${id}`)}
           >
             <Text className="text-white font-semibold text-lg">
@@ -317,7 +337,7 @@ export default function PlaceScreen() {
           </TouchableOpacity>
 
           <TouchableOpacity
-            className="bg-orange-500 py-3 mx-5 rounded-xl shadow-lg flex items-center justify-center mt-6"
+            className="bg-blue-600 py-3 mx-5 rounded-xl shadow-lg flex items-center justify-center mt-6"
             onPress={() => {
               fetchChats();
             }}

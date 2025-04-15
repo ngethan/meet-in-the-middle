@@ -14,7 +14,7 @@ import {
 import { useRouter, useLocalSearchParams } from "expo-router";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { supabase } from "@/lib/supabase";
-import { FontAwesome } from "@expo/vector-icons";
+import { ArrowLeft, Plus, Calendar, Clock } from "lucide-react-native";
 import * as Location from "expo-location";
 import { useAuth } from "@/context/AuthProvider";
 import moment from "moment";
@@ -50,7 +50,7 @@ export default function TripsScreen() {
     }
   }, [chatId]);
 
-  const handleDateChange = (event, selectedDate, isStart) => {
+  const handleDateChange = (event: any, selectedDate: any, isStart: any) => {
     if (selectedDate) {
       if (isStart) {
         setStartDate(selectedDate);
@@ -141,7 +141,6 @@ export default function TripsScreen() {
       setStartingLocation("");
       setTripModalVisible(false);
       fetchTrips();
-      fetchTrips(selectedChat.id);
     }
   };
 
@@ -150,7 +149,7 @@ export default function TripsScreen() {
       {/* 📌 Header */}
       <View className="flex-row items-center px-6 py-16 bg-orange-500 shadow-lg">
         <TouchableOpacity onPress={() => router.back()} className="p-2">
-          <FontAwesome name="arrow-left" size={28} color="black" />
+          <ArrowLeft size={28} color="black" />
         </TouchableOpacity>
         <Text className="text-lg font-bold text-black ml-4">
           Trips of Chat: {chatName}
@@ -184,8 +183,8 @@ export default function TripsScreen() {
             }}
             onPress={() =>
               router.push({
-                pathname: `/trip/${item.id}`,
-                params: { tripId: item.id },
+                pathname: "/trip/[id]",
+                params: { id: item.id },
               })
             }
           >
@@ -218,12 +217,12 @@ export default function TripsScreen() {
 
       {/* 📌 Floating Action Button to Create New Trip */}
       <TouchableOpacity
-        className="absolute bottom-20 right-6 bg-orange-500 w-20 h-20 rounded-full flex items-center justify-center shadow-lg"
+        className="absolute bottom-20 right-6 bg-blue-500 w-20 h-20 rounded-full flex items-center justify-center shadow-lg"
         onPress={() => {
           setTripModalVisible(true);
         }}
       >
-        {/* <FontAwesome name="plus" size={30} color="white" /> */}
+        {/* <Plus size={30} color="white" /> */}
         <Text className="text-white font-bold text-center text-sm">
           Create Trips
         </Text>

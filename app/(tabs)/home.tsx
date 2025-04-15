@@ -7,13 +7,11 @@ import {
   TouchableOpacity,
   FlatList,
   Image,
-  StyleSheet,
   Modal,
   TextInput,
-  ScrollView,
   Dimensions,
+  ScrollView,
 } from "react-native";
-import { Picker } from "@react-native-picker/picker";
 import { FontAwesome } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import NavigationDrawer from "../../components/Drawer";
@@ -21,19 +19,22 @@ import axios from "axios";
 import { SearchBar } from "@rneui/themed";
 import { useAuth } from "@/context/AuthProvider";
 import * as Location from "expo-location";
-import LoadingOverlay from "../loadingoverlay";
-import { LocationProvider, useLocationTypes } from "@/context/LocationProvider";
-import BouncyCheckbox from "react-native-bouncy-checkbox";
+import LoadingOverlay from "../../components/loadingoverlay";
+import { useLocationTypes } from "@/context/LocationProvider";
 
 import {
   PanGestureHandler,
   GestureHandlerRootView,
 } from "react-native-gesture-handler";
-
-const { width, height } = Dimensions.get("window");
+import {
+  Menu,
+  User2Icon,
+  UserCircle2Icon,
+  ChevronDown,
+} from "lucide-react-native";
 
 const GOOGLE_MAPS_API_KEY = process.env.EXPO_PUBLIC_API_KEY;
-const RADIUS = 50000;
+const RADIUS = 50000; // 50 km
 
 export default function HomeScreen() {
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -41,13 +42,18 @@ export default function HomeScreen() {
     null,
   );
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  const [address, setAddress] = useState(null);
-  const [places, setPlaces] = useState([]);
-  const [searchResults, setSearchResults] = useState([]);
+  const [address, setAddress] =
+    useState<Location.LocationGeocodedAddress | null>(null);
+  const [places, setPlaces] = useState<any[]>([]);
+  const [searchResults, setSearchResults] = useState<any[]>([]);
   const [searchText, setSearchText] = useState("");
   const [searchLocationText, setSearchLocationText] = useState("");
   const [isOverlayVisible, setOverlayVisible] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [currentSearchLocation, setCurrentSearchLocation] = useState<{
+    lat: number;
+    lon: number;
+  } | null>(null);
 
   const { user, signOut } = useAuth();
   const router = useRouter();
@@ -93,8 +99,9 @@ export default function HomeScreen() {
           },
         },
       );
+      console.log(response.data.results[0].photos);
 
-      let results = response.data.results.map((place) => ({
+      let results = response.data.results.map((place: any) => ({
         id: place.place_id,
         title: place.name,
         description: place.vicinity || "Popular place nearby.",
@@ -110,22 +117,23 @@ export default function HomeScreen() {
 
       // Real-time filtering based on search text
       if (query) {
-        results = results.filter((place) =>
+        results = results.filter((place: any) =>
           place.title.toLowerCase().includes(query.toLowerCase()),
         );
       }
+
       if (selectedPreferences.length > 0) {
-        results = results.filter((place) =>
-          place.types.some((type) => selectedPreferences.includes(type)),
+        results = results.filter((place: any) =>
+          place.types.some((type: any) => selectedPreferences.includes(type)),
         );
       }
 
-      results = results.map((place) => ({
+      results = results.map((place: any) => ({
         ...place,
         distance: calculateDistance(lat, lon, place.latitude, place.longitude),
       }));
 
-      results.sort((a, b) => a.distance - b.distance);
+      results.sort((a: any, b: any) => a.distance - b.distance);
       setPlaces(results);
     } catch (error) {
       console.error("Error fetching places:", error);
@@ -149,6 +157,10 @@ export default function HomeScreen() {
       try {
         let location = await Location.getCurrentPositionAsync({});
         setLocation(location);
+        setCurrentSearchLocation({
+          lat: location.coords.latitude,
+          lon: location.coords.longitude,
+        });
 
         let geoAddress = await Location.reverseGeocodeAsync(location.coords);
         if (geoAddress.length > 0) {
@@ -167,11 +179,19 @@ export default function HomeScreen() {
       }
     }
 
-    getCurrentLocation();
-  }, [searchText]); // Now fetches on searchText change to make the update real-time
+    if (!currentSearchLocation) {
+      getCurrentLocation();
+    } else {
+      fetchPopularDestinations(
+        currentSearchLocation.lat,
+        currentSearchLocation.lon,
+        searchText,
+        selectedPreferences,
+      );
+    }
+  }, [searchText, selectedPreferences]);
 
-  // Search new starting location
-  const searchLocation = async (text) => {
+  const searchLocation = async (text: string) => {
     try {
       const response = await axios.get(
         `https://maps.googleapis.com/maps/api/place/autocomplete/json`,
@@ -189,7 +209,7 @@ export default function HomeScreen() {
     }
   };
 
-  const changeLocation = async (location) => {
+  const changeLocation = async (location: any) => {
     let response = await axios.get(
       `https://maps.googleapis.com/maps/api/place/details/json`,
       {
@@ -211,6 +231,22 @@ export default function HomeScreen() {
       setAddress(geoAddress[0]);
     }
 
+    // Update location state with new coordinates
+    setLocation({
+      coords: {
+        latitude: lat,
+        longitude: lon,
+        altitude: null,
+        accuracy: null,
+        altitudeAccuracy: null,
+        heading: null,
+        speed: null,
+      },
+      timestamp: Date.now(),
+    });
+
+    // Store current search location
+    setCurrentSearchLocation({ lat, lon });
     fetchPopularDestinations(lat, lon, searchText, selectedPreferences);
   };
 
@@ -243,13 +279,11 @@ export default function HomeScreen() {
 
   return (
     <View className="flex-1 bg-gray-100">
-      {/* Header */}
-      <View className="flex-row justify-between items-center px-6 py-16 bg-orange-400 shadow-md">
+      <View className="flex-row justify-between items-center px-6 pt-16 pb-4 bg-blue-400 shadow-md">
         <TouchableOpacity onPress={toggleDrawer}>
-          <FontAwesome name="bars" size={32} color="black" />
+          <Menu size={32} color="black" />
         </TouchableOpacity>
 
-        {/* Clickable Location Text */}
         <TouchableOpacity
           onPress={() => {
             setOverlayVisible(true);
@@ -261,55 +295,104 @@ export default function HomeScreen() {
         </TouchableOpacity>
 
         <TouchableOpacity onPress={() => router.push("/profile")}>
-          <FontAwesome name="user-circle" size={32} color="black" />
+          <UserCircle2Icon strokeWidth={1.5} size={32} color="black" />
         </TouchableOpacity>
       </View>
 
-      {/* Search Bar and Filter */}
       <SearchBar
         placeholder="Search for a place..."
         value={searchText}
         onChangeText={(text) => {
-          setSearchText(text); // Update search text
-          fetchPopularDestinations(
-            location?.coords.latitude,
-            location?.coords.longitude,
-            text,
-            selectedPreferences,
-          ); // Fetch places in real-time
+          setSearchText(text);
+          if (currentSearchLocation) {
+            fetchPopularDestinations(
+              currentSearchLocation.lat,
+              currentSearchLocation.lon,
+              text,
+              selectedPreferences,
+            );
+          }
         }}
         containerStyle={{
-          backgroundColor: "#ffffff", // White background for clean look
-          marginBottom: 20, // Add bottom spacing
-          shadowColor: "#000", // Subtle shadow for elevation
-          shadowOffset: { width: 0, height: 4 }, // Shadow angle
-          shadowOpacity: 0.1, // Light opacity for subtle effect
-          shadowRadius: 5, // Soft shadow edges
-          elevation: 5, // Android shadow effect
+          backgroundColor: "#ffffff",
+          marginBottom: 10,
+          shadowColor: "#000",
+          shadowOffset: { width: 0, height: 4 },
+          shadowOpacity: 0.1,
+          shadowRadius: 5,
+          elevation: 5,
         }}
         inputContainerStyle={{
-          backgroundColor: "#f4f4f4", // Light grey background for input area
-          borderRadius: 10, // Round corners for the input field
-          paddingHorizontal: 12, // Add padding for better alignment
-          paddingVertical: 8, // Add padding for a comfortable input area
+          backgroundColor: "#f4f4f4",
+          borderRadius: 10,
+          paddingHorizontal: 12,
         }}
         inputStyle={{
-          color: "#333", // Dark grey text for readability
-          fontSize: 16, // Slightly larger font size for better accessibility
+          color: "#333",
+          fontSize: 16,
         }}
-        placeholderTextColor="#999" // Light grey for placeholder text
+        placeholderTextColor="#999"
         leftIconContainerStyle={{
-          paddingLeft: 10, // Add padding around the left icon
+          paddingLeft: 10,
         }}
         rightIconContainerStyle={{
-          paddingRight: 10, // Add padding around the right icon
+          paddingRight: 10,
         }}
-        round={true} // Keep the search bar rounded
-        lightTheme // Use light theme for better visual contrast
-        showCancel={false} // Hide cancel button if not needed
+        round={true}
+        lightTheme
+        showCancel={false}
       />
 
-      {/* Place List */}
+      {/* Filter Section */}
+      <View className="px-4 mb-4">
+        <TouchableOpacity
+          onPress={togglePreferenceDropdown}
+          className="flex-row items-center justify-between bg-white p-3 rounded-lg shadow-sm"
+        >
+          <Text className="text-gray-700 font-medium">
+            {selectedPreferences.length
+              ? `${selectedPreferences.length} filters selected`
+              : "Filter by type"}
+          </Text>
+          <ChevronDown
+            size={20}
+            color="#4B5563"
+            style={{
+              transform: [{ rotate: isPreferenceOpen ? "180deg" : "0deg" }],
+            }}
+          />
+        </TouchableOpacity>
+
+        {isPreferenceOpen && (
+          <View className="bg-white mt-2 rounded-lg shadow-sm p-2 max-h-40">
+            <ScrollView>
+              {preferenceOptions.map((preference) => (
+                <TouchableOpacity
+                  key={preference}
+                  onPress={() => handlePreferenceChange(preference)}
+                  className="flex-row items-center p-2"
+                >
+                  <View
+                    className={`w-5 h-5 rounded border ${
+                      selectedPreferences.includes(preference)
+                        ? "bg-blue-500 border-blue-500"
+                        : "border-gray-300"
+                    } mr-3`}
+                  >
+                    {selectedPreferences.includes(preference) && (
+                      <Text className="text-white text-center">✓</Text>
+                    )}
+                  </View>
+                  <Text className="text-gray-700">
+                    {preference.replace(/_/g, " ").toLowerCase()}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        )}
+      </View>
+
       <FlatList
         data={places}
         keyExtractor={(item: any) => item.id}

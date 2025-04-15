@@ -1,3 +1,46 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer components {
+  .ios-card {
+    @apply bg-white rounded-ios p-ios-4 shadow-ios;
+  }
+
+  .ios-button {
+    @apply bg-primary px-ios-4 py-ios-2 rounded-ios-full text-white font-semibold active:opacity-80;
+  }
+
+  .ios-input {
+    @apply bg-neutral-50 rounded-ios px-ios-3 py-ios-2 border border-neutral-100 focus:border-primary focus:outline-none;
+  }
+
+  .ios-header {
+    @apply text-2xl font-semibold mb-ios-4;
+  }
+
+  .ios-list-item {
+    @apply flex items-center p-ios-3 border-b border-neutral-100 bg-white;
+  }
+
+  .ios-nav-bar {
+    @apply bg-white/80 backdrop-blur-lg border-b border-neutral-100;
+  }
+
+  .ios-tab-bar {
+    @apply bg-white/80 backdrop-blur-lg border-t border-neutral-100;
+  }
+}
+
+/* iOS-style smooth scrolling and interactions */
+* {
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+}
+
+/* Improved text rendering */
+body {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  @apply bg-neutral-50 text-neutral-900;
+}

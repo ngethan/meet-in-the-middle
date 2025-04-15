@@ -12,7 +12,17 @@ import {
 import { useAuth } from "../context/AuthProvider";
 import { useRouter } from "expo-router";
 import { supabase } from "../lib/supabase";
-import { FontAwesome, MaterialIcons } from "@expo/vector-icons";
+import {
+  ArrowLeft,
+  User,
+  Lock,
+  Bell,
+  Mail,
+  Moon,
+  Globe,
+  LogOut,
+  Trash2,
+} from "lucide-react-native";
 import * as Localization from "expo-localization";
 import { Picker } from "@react-native-picker/picker";
 
@@ -74,7 +84,7 @@ export default function SettingsScreen() {
       <View className="absolute top-2r left-5">
         {/* Back Button */}
         <TouchableOpacity onPress={() => router.back()}>
-          <FontAwesome name="arrow-left" size={32} color="black" />
+          <ArrowLeft size={32} color="black" />
         </TouchableOpacity>
       </View>
       <Text style={styles.settingsTitle}>Settings</Text>
@@ -84,19 +94,19 @@ export default function SettingsScreen() {
         style={styles.settingItem}
         onPress={() => router.push("/profile")}
       >
-        <FontAwesome name="user" size={22} color="#444" />
+        <User size={22} color="#444" />
         <Text style={styles.settingText}>Edit Profile</Text>
       </TouchableOpacity>
 
       {/* Change Password */}
       <TouchableOpacity style={styles.settingItem} onPress={changePassword}>
-        <FontAwesome name="lock" size={22} color="#444" />
+        <Lock size={22} color="#444" />
         <Text style={styles.settingText}>Change Password</Text>
       </TouchableOpacity>
 
       {/* Notifications */}
       <View style={styles.settingItem}>
-        <FontAwesome name="bell" size={22} color="#444" />
+        <Bell size={22} color="#444" />
         <Text style={styles.settingText}>Push Notifications</Text>
         <Switch
           value={pushNotifications}
@@ -105,7 +115,7 @@ export default function SettingsScreen() {
       </View>
 
       <View style={styles.settingItem}>
-        <FontAwesome name="envelope" size={22} color="#444" />
+        <Mail size={22} color="#444" />
         <Text style={styles.settingText}>Email Notifications</Text>
         <Switch
           value={emailNotifications}
@@ -115,14 +125,14 @@ export default function SettingsScreen() {
 
       {/* Dark Mode */}
       <View style={styles.settingItem}>
-        <FontAwesome name="moon-o" size={22} color="#444" />
+        <Moon size={22} color="#444" />
         <Text style={styles.settingText}>Dark Mode</Text>
         <Switch value={darkMode} onValueChange={toggleDarkMode} />
       </View>
 
       {/* Language Selection */}
       <View style={styles.settingItem}>
-        <MaterialIcons name="language" size={22} color="#444" />
+        <Globe size={22} color="#444" />
         <Text style={styles.settingText}>Language</Text>
         <Picker
           selectedValue={language}
@@ -144,13 +154,13 @@ export default function SettingsScreen() {
           router.push("/auth");
         }}
       >
-        <FontAwesome name="sign-out" size={22} color="#FFF" />
+        <LogOut size={22} color="#FFF" />
         <Text style={styles.logoutButtonText}>Sign Out</Text>
       </TouchableOpacity>
 
       {/* Delete Account */}
       <TouchableOpacity style={styles.deleteButton} onPress={deleteAccount}>
-        <FontAwesome name="trash" size={22} color="#FFF" />
+        <Trash2 size={22} color="#FFF" />
         <Text style={styles.deleteButtonText}>Delete Account</Text>
       </TouchableOpacity>
     </ScrollView>

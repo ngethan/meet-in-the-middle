@@ -25,16 +25,26 @@ const polyline = require("@mapbox/polyline");
 
 export default function MapScreen() {
   const { id } = useLocalSearchParams();
-  const [destination, setDestination] = useState(null);
-  const [currentLocation, setCurrentLocation] = useState(null);
-  const [routeCoords, setRouteCoords] = useState([]);
-  const [travelTimes, setTravelTimes] = useState([]);
+  const [destination, setDestination] = useState<{
+    latitude: number;
+    longitude: number;
+  } | null>(null);
+  const [currentLocation, setCurrentLocation] = useState<{
+    latitude: number;
+    longitude: number;
+  } | null>(null);
+  const [routeCoords, setRouteCoords] = useState<
+    { latitude: number; longitude: number }[]
+  >([]);
+  const [travelTimes, setTravelTimes] = useState<
+    { mode: string; duration: string; distance: string }[]
+  >([]);
   const [selectedMode, setSelectedMode] = useState("driving");
-  const [transitSteps, setTransitSteps] = useState([]);
+  const [transitSteps, setTransitSteps] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isOverlayVisible, setOverlayVisible] = useState(false);
   const [searchText, setSearchText] = useState("");
-  const [searchResults, setSearchResults] = useState([]);
+  const [searchResults, setSearchResults] = useState<any[]>([]);
 
   const travelModes = ["driving", "walking", "bicycling", "transit"];
 
@@ -95,7 +105,13 @@ export default function MapScreen() {
   };
 
   // get route from the starting point to the destination
-  const fetchRoute = async (startLat, startLng, endLat, endLng, mode) => {
+  const fetchRoute = async (
+    startLat: number,
+    startLng: number,
+    endLat: number,
+    endLng: number,
+    mode: string,
+  ) => {
     try {
       const response = await axios.get(
         `https://maps.googleapis.com/maps/api/directions/json`,
@@ -118,7 +134,7 @@ export default function MapScreen() {
         setSelectedMode(mode);
 
         if (mode === "transit") {
-          const steps = route.legs[0].steps.map((step) => ({
+          const steps = route.legs[0].steps.map((step: any) => ({
             instruction: step.html_instructions.replace(/<[^>]*>?/gm, ""),
             distance: step.distance.text,
             duration: step.duration.text,
@@ -167,7 +183,12 @@ export default function MapScreen() {
   };
 
   // Get details about the route
-  const fetchAllRouteDetails = async (startLat, startLng, endLat, endLng) => {
+  const fetchAllRouteDetails = async (
+    startLat: number,
+    startLng: number,
+    endLat: number,
+    endLng: number,
+  ) => {
     let times = [];
     for (const mode of travelModes) {
       try {
@@ -206,7 +227,7 @@ export default function MapScreen() {
   };
 
   // Search new starting location
-  const searchLocation = async (text) => {
+  const searchLocation = async (text: string) => {
     try {
       const response = await axios.get(
         `https://maps.googleapis.com/maps/api/place/autocomplete/json`,
@@ -225,7 +246,7 @@ export default function MapScreen() {
   };
 
   // Change the starting location
-  const selectLocation = async (placeId) => {
+  const selectLocation = async (placeId: string | null) => {
     try {
       const response = await axios.get(
         `https://maps.googleapis.com/maps/api/place/details/json`,
@@ -275,8 +296,8 @@ export default function MapScreen() {
       <MapView
         style={styles.map}
         initialRegion={{
-          latitude: currentLocation?.latitude || null, // Default WashU Location
-          longitude: currentLocation?.longitude || null,
+          latitude: currentLocation?.latitude || 38.627, // Default WashU Location
+          longitude: currentLocation?.longitude || -90.1994,
           latitudeDelta: 0.1,
           longitudeDelta: 0.1,
         }}
@@ -302,7 +323,7 @@ export default function MapScreen() {
         {/* Back Button */}
         <View className="absolute top-2r left-5">
           <TouchableOpacity
-            className="bg-orange-700 px-4 py-3 top-20 rounded-lg shadow-lg"
+            className="bg-purple-500 px-4 py-3 top-20 rounded-lg shadow-lg"
             onPress={() => router.back()}
           >
             <Text className="text-white font-bold">Back</Text>
@@ -426,7 +447,10 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   changeLocationButton: {
-    backgroundColor: "#ED8F03",
+    position: "absolute",
+    bottom: 15,
+    right: 10,
+    backgroundColor: "blue",
     padding: 10,
     borderRadius: 8,
     alignSelf: "flex-end",
@@ -475,14 +499,14 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   card: {
-    backgroundColor: "#f0f0f0",
+    backgroundColor: "#fff",
     marginHorizontal: 5,
     padding: 15,
     borderRadius: 10,
     alignItems: "center",
   },
   selectedCard: {
-    backgroundColor: "#ED8F03",
+    backgroundColor: "#009FFF",
   },
   modeText: {
     fontSize: 16,

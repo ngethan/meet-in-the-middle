@@ -1,24 +1,24 @@
 {
+  "cli": {
+    "version": ">= 5.9.1"
+  },
   "build": {
-    "development-simulator": {
+    "development": {
       "developmentClient": true,
       "distribution": "internal",
       "ios": {
         "simulator": true
-      },
-      "production": {
-        "autoIncrement": true
       }
-    }
+    },
+    "preview": {
+      "distribution": "internal",
+      "ios": {
+        "simulator": true
+      }
+    },
+    "production": {}
   },
-  "preview": {
-    "developmentClient": true,
-    "distribution": "internal",
-    "ios": {
-      "simulator": true
-    }
-  },
-  "cli": {
-    "appVersionSource": "remote"
+  "submit": {
+    "production": {}
   }
 }
