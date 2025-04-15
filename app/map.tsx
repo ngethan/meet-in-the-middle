@@ -13,6 +13,7 @@ import {
 import { Picker } from "@react-native-picker/picker";
 import axios from "axios";
 import { useRouter } from "expo-router";
+import DropDownPicker from "react-native-dropdown-picker";
 
 const GOOGLE_MAPS_API_KEY = process.env.EXPO_PUBLIC_API_KEY;
 const travelModes = ["driving", "walking", "bicycling", "transit"];
@@ -39,6 +40,14 @@ export default function MapScreen() {
   const [routeCoords, setRouteCoords] = useState([]);
   const [transitSteps, setTransitSteps] = useState([]);
   const router = useRouter();
+  const [openDropdown, setOpenDropdown] = useState(false);
+  const [dropdownItems, setDropdownItems] = useState([
+    { label: "All", value: "All" },
+    ...parsedParticipants.map((participant) => ({
+      label: participant.fullName,
+      value: participant.fullName,
+    })),
+  ]);
 
   useEffect(() => {
     if (typeof participants === "string") {
@@ -93,6 +102,17 @@ export default function MapScreen() {
     selectedUser,
     selectedMode,
   ]);
+
+  useEffect(() => {
+    // Update dropdown items when parsedParticipants changes
+    setDropdownItems([
+      { label: "All", value: "All" },
+      ...parsedParticipants.map((participant) => ({
+        label: participant.fullName,
+        value: participant.fullName,
+      })),
+    ]);
+  }, [parsedParticipants]);
 
   async function fetchRoutes(participants, mode = "driving") {
     let fetchedRoutes = [];
@@ -228,24 +248,6 @@ export default function MapScreen() {
 
   return (
     <View style={styles.container}>
-      {/* Dropdown Menu */}
-      <View style={styles.dropdownContainer}>
-        <Picker
-          selectedValue={selectedUser}
-          onValueChange={(itemValue) => setSelectedUser(itemValue)}
-          style={styles.picker}
-        >
-          <Picker.Item label="All" value="All" />
-          {parsedParticipants.map((participant, index) => (
-            <Picker.Item
-              key={index}
-              label={participant.fullName}
-              value={participant.fullName}
-            />
-          ))}
-        </Picker>
-      </View>
-
       {/* Map View */}
       <MapView
         style={styles.map}
@@ -292,60 +294,111 @@ export default function MapScreen() {
             )}
       </MapView>
 
-      {/* Travel Modes */}
-      {selectedUser === "All" ? (
+      {/* Dropdown and Travel Modes */}
+      <View style={styles.bottomContainer}>
+        {/* Dropdown Menu */}
+        <View style={styles.dropdownContainer}>
+          <DropDownPicker
+            open={openDropdown}
+            value={selectedUser}
+            items={dropdownItems}
+            setOpen={setOpenDropdown}
+            setValue={setSelectedUser}
+            setItems={setDropdownItems}
+            placeholder="Select a participant"
+            style={{
+              borderWidth: 1,
+              borderColor: "#ddd",
+              borderRadius: 12,
+              backgroundColor: "#f9f9f9",
+            }}
+            dropDownContainerStyle={{
+              backgroundColor: "#fff",
+              borderWidth: 1,
+              borderColor: "#ddd",
+              borderRadius: 12,
+            }}
+          />
+        </View>
+
+        {/* Transit Steps */}
+        {selectedMode === "transit" && transitSteps.length > 0 && (
+          <View style={styles.stepsContainer}>
+            <ScrollView>
+              {transitSteps.map((step, index) => (
+                <View key={index} style={styles.step}>
+                  <Text style={styles.stepInstruction}>{step.instruction}</Text>
+                  <Text style={styles.stepDetail}>
+                    Distance: {step.distance} | Duration: {step.duration}
+                  </Text>
+                  {step.transitDetails && (
+                    <Text style={styles.transitDetail}>
+                      Take {step.transitDetails.vehicle} (
+                      {step.transitDetails.line}) from{" "}
+                      {step.transitDetails.departureStop} to{" "}
+                      {step.transitDetails.arrivalStop} (
+                      {step.transitDetails.numStops} stops)
+                    </Text>
+                  )}
+                </View>
+              ))}
+            </ScrollView>
+          </View>
+        )}
+
+        {/* Travel Modes */}
         <View style={styles.travelTimesContainer}>
           <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            {travelModes.map((mode, index) => (
-              <TouchableOpacity
-                key={index}
-                style={[
-                  styles.travelTimeCard,
-                  selectedMode === mode ? styles.selectedCard : null,
-                ]}
-                onPress={() => {
-                  setSelectedMode(mode); // Update the selected mode
-                  fetchRoutes(parsedParticipants, mode); // Fetch routes for all users
-                }}
-              >
-                <Text style={styles.travelMode}>{mode.toUpperCase()}</Text>
-              </TouchableOpacity>
-            ))}
+            {selectedUser === "All"
+              ? travelModes.map((mode, index) => (
+                  <TouchableOpacity
+                    key={index}
+                    style={[
+                      styles.travelTimeCard,
+                      selectedMode === mode ? styles.selectedCard : null,
+                    ]}
+                    onPress={() => {
+                      setSelectedMode(mode); // Update the selected mode
+                      fetchRoutes(parsedParticipants, mode); // Fetch routes for all users
+                    }}
+                  >
+                    <Text style={styles.travelMode}>{mode.toUpperCase()}</Text>
+                  </TouchableOpacity>
+                ))
+              : userTravelTimes.map((item, index) => (
+                  <TouchableOpacity
+                    key={index}
+                    style={[
+                      styles.travelTimeCard,
+                      selectedMode === item.mode ? styles.selectedCard : null,
+                    ]}
+                    onPress={() => {
+                      setSelectedMode(item.mode); // Update the selected mode
+                      fetchRoute(
+                        parsedParticipants.find(
+                          (p) => p.fullName === selectedUser,
+                        )?.latitude || bestLatitude,
+                        parsedParticipants.find(
+                          (p) => p.fullName === selectedUser,
+                        )?.longitude || bestLongitude,
+                        bestLatitude,
+                        bestLongitude,
+                        item.mode,
+                      ).then((route) => {
+                        setRouteCoords([route]); // Update the route for the selected user
+                      });
+                    }}
+                  >
+                    <Text style={styles.travelMode}>
+                      {item.mode.toUpperCase()}
+                    </Text>
+                    <Text>{item.duration}</Text>
+                    <Text>{item.distance}</Text>
+                  </TouchableOpacity>
+                ))}
           </ScrollView>
         </View>
-      ) : (
-        <View style={styles.travelTimesContainer}>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            {userTravelTimes.map((item, index) => (
-              <TouchableOpacity
-                key={index}
-                style={[
-                  styles.travelTimeCard,
-                  selectedMode === item.mode ? styles.selectedCard : null,
-                ]}
-                onPress={() => {
-                  setSelectedMode(item.mode); // Update the selected mode
-                  fetchRoute(
-                    parsedParticipants.find((p) => p.fullName === selectedUser)
-                      ?.latitude || bestLatitude,
-                    parsedParticipants.find((p) => p.fullName === selectedUser)
-                      ?.longitude || bestLongitude,
-                    bestLatitude,
-                    bestLongitude,
-                    item.mode,
-                  ).then((route) => {
-                    setRouteCoords([route]); // Update the route for the selected user
-                  });
-                }}
-              >
-                <Text style={styles.travelMode}>{item.mode.toUpperCase()}</Text>
-                <Text>{item.duration}</Text>
-                <Text>{item.distance}</Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-        </View>
-      )}
+      </View>
 
       {/* Back Button */}
       <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
@@ -360,43 +413,21 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#fff",
   },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "#fff",
-  },
-  loadingText: {
-    marginTop: 10,
-    color: "#555",
-  },
-  dropdownContainer: {
-    position: "absolute",
-    top: 10,
-    left: 10,
-    right: 10,
-    zIndex: 10,
-    backgroundColor: "#fff",
-    borderRadius: 8,
-    padding: 5,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 5,
-  },
-  picker: {
-    height: 40,
-    width: "100%",
-  },
   map: {
     flex: 1,
   },
-  travelTimesContainer: {
+  bottomContainer: {
     position: "absolute",
-    bottom: 10,
+    bottom: 40,
     left: 10,
     right: 10,
+    flexDirection: "column",
+    gap: 10,
+  },
+  dropdownContainer: {
+    zIndex: 10,
+  },
+  travelTimesContainer: {
     backgroundColor: "#fff",
     borderRadius: 8,
     padding: 10,
@@ -431,5 +462,31 @@ const styles = StyleSheet.create({
   backButtonText: {
     color: "#fff",
     fontWeight: "bold",
+  },
+  stepsContainer: {
+    backgroundColor: "#fff",
+    padding: 15,
+    height: 150,
+    borderTopWidth: 1,
+    borderColor: "#ddd",
+  },
+  step: {
+    marginBottom: 10,
+    borderBottomWidth: 1,
+    borderColor: "#ddd",
+    paddingBottom: 5,
+  },
+  stepInstruction: {
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  stepDetail: {
+    fontSize: 12,
+    color: "#666",
+  },
+  transitDetail: {
+    fontSize: 12,
+    color: "#444",
+    marginTop: 5,
   },
 });
