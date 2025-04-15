@@ -285,7 +285,7 @@ export default function PlaceScreen() {
         </TouchableOpacity>
 
         {place ? (
-          <Text className="text-lg font-bold text-gray-800">{place.title}</Text>
+          <Text className="text-lg font-bold text-white">{place.title}</Text>
         ) : (
           <Text className="text-lg font-bold text-gray-800">Loading...</Text>
         )}

@@ -77,6 +77,7 @@ export default function AuthScreen() {
     if (error) {
       Alert.alert("Error", error.message);
       setLoading(false);
+      console.error(error.code);
       return;
     }
 

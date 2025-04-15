@@ -99,6 +99,7 @@ export default function HomeScreen() {
           },
         },
       );
+      console.log(response.data.results[0].photos);
 
       let results = response.data.results.map((place: any) => ({
         id: place.place_id,

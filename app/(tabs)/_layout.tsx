@@ -1,10 +1,17 @@
-import { Tabs } from "expo-router";
+import { useAuth } from "@/context/AuthProvider";
+import { Redirect, Tabs } from "expo-router";
 import { Home, Plane, Calendar } from "lucide-react-native";
 import { View, Dimensions } from "react-native";
 
 const { width } = Dimensions.get("window");
 
 export default function TabsNavigator() {
+  const { user } = useAuth();
+
+  if (!user) {
+    return <Redirect href="/auth" />;
+  }
+
   return (
     <Tabs
       screenOptions={{

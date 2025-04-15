@@ -29,12 +29,12 @@ export default function NavigationDrawer({
   isOpen,
 }: NavigationDrawerProps) {
   const router = useRouter();
-  const slideAnim = useRef(new Animated.Value(-width * 0.7)).current;
+  const slideAnim = useRef(new Animated.Value(-width)).current;
   const { user, signOut } = useAuth();
 
   useEffect(() => {
     Animated.timing(slideAnim, {
-      toValue: isOpen ? 0 : -width * 0.7,
+      toValue: isOpen ? 0 : -width,
       duration: 300,
       easing: (t) => --t * t * t + 1,
       useNativeDriver: true,
