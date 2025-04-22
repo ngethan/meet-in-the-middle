@@ -231,6 +231,8 @@ PODS:
     - ExpoModulesCore
   - ExpoAsset (11.0.4):
     - ExpoModulesCore
+  - ExpoBlur (14.0.3):
+    - ExpoModulesCore
   - ExpoFileSystem (18.0.11):
     - ExpoModulesCore
   - ExpoFont (13.0.3):
@@ -238,6 +240,8 @@ PODS:
   - ExpoGooglePlaces (0.2.5):
     - ExpoModulesCore
     - GooglePlaces
+  - ExpoHaptics (14.0.1):
+    - ExpoModulesCore
   - ExpoHead (4.0.17):
     - ExpoModulesCore
   - ExpoKeepAwake (14.0.3):
@@ -298,6 +302,15 @@ PODS:
   - hermes-engine (0.76.7):
     - hermes-engine/Pre-built (= 0.76.7)
   - hermes-engine/Pre-built (0.76.7)
+  - MapboxCommon (23.11.4)
+  - MapboxCoreMaps (10.19.2):
+    - MapboxCommon (~> 23.11)
+  - MapboxMaps (10.19.4):
+    - MapboxCommon (= 23.11.4)
+    - MapboxCoreMaps (= 10.19.2)
+    - MapboxMobileEvents (= 2.0.0)
+    - Turf (= 2.8.0)
+  - MapboxMobileEvents (2.0.0)
   - RCT-Folly (2024.01.01.00):
     - boost
     - DoubleConversion
@@ -1908,6 +1921,31 @@ PODS:
     - ReactCommon/turbomodule/bridging
     - ReactCommon/turbomodule/core
     - Yoga
+  - rnmapbox-maps (10.1.38):
+    - MapboxMaps (~> 10.19.0)
+    - React
+    - React-Core
+    - rnmapbox-maps/DynamicLibrary (= 10.1.38)
+    - Turf
+  - rnmapbox-maps/DynamicLibrary (10.1.38):
+    - DoubleConversion
+    - hermes-engine
+    - MapboxMaps (~> 10.19.0)
+    - RCT-Folly
+    - RCTRequired
+    - RCTTypeSafety
+    - React
+    - React-Core
+    - React-featureflags
+    - React-ImageManager
+    - React-NativeModulesApple
+    - React-RCTFabric
+    - React-rendererdebug
+    - ReactCodegen
+    - ReactCommon/turbomodule/bridging
+    - ReactCommon/turbomodule/core
+    - Turf
+    - Yoga
   - RNReanimated (3.16.7):
     - DoubleConversion
     - glog
@@ -2019,6 +2057,7 @@ PODS:
     - ReactCommon/turbomodule/core
     - Yoga
   - SocketRocket (0.7.1)
+  - Turf (2.8.0)
   - Yoga (0.0.0)
 
 DEPENDENCIES:
@@ -2036,9 +2075,11 @@ DEPENDENCIES:
   - "ExpoAdapterGoogleSignIn (from `../node_modules/.pnpm/@react-native-google-signin+google-signin@13.2.0_expo@52.0.37_@babel+core@7.26.8_@babel+prese_gb6o5utwlmexx2g7rgnm6fzm24/node_modules/@react-native-google-signin/google-signin/expo/ios`)"
   - "ExpoAppleAuthentication (from `../node_modules/.pnpm/expo-apple-authentication@7.1.3_expo@52.0.37_@babel+core@7.26.8_@babel+preset-env@7.26.8_@bab_dupdvikkhqe32ikgsmz2l4itom/node_modules/expo-apple-authentication/ios`)"
   - "ExpoAsset (from `../node_modules/.pnpm/expo-asset@11.0.4_expo@52.0.37_@babel+core@7.26.8_@babel+preset-env@7.26.8_@babel+core@7.26.8_d7imdkac3xezqbwy5fhjcragpe/node_modules/expo-asset/ios`)"
+  - "ExpoBlur (from `../node_modules/.pnpm/expo-blur@14.0.3_expo@52.0.37_@babel+core@7.26.8_@babel+preset-env@7.26.8_@babel+core@7.26.8__dmdddf3d432ozorcrtqyayg3lq/node_modules/expo-blur/ios`)"
   - "ExpoFileSystem (from `../node_modules/.pnpm/expo-file-system@18.0.11_expo@52.0.37_@babel+core@7.26.8_@babel+preset-env@7.26.8_@babel+core_jnyka4ba4dmyuv26haipscbrlm/node_modules/expo-file-system/ios`)"
   - "ExpoFont (from `../node_modules/.pnpm/expo-font@13.0.3_expo@52.0.37_@babel+core@7.26.8_@babel+preset-env@7.26.8_@babel+core@7.26.8__7xxbyudplhhyokwz3hqbm5pugq/node_modules/expo-font/ios`)"
   - "ExpoGooglePlaces (from `../node_modules/.pnpm/expo-google-places@0.2.5_expo@52.0.37_@babel+core@7.26.8_@babel+preset-env@7.26.8_@babel+core_6xu76bunzt5ad3u7rkospdz5ae/node_modules/expo-google-places/ios`)"
+  - "ExpoHaptics (from `../node_modules/.pnpm/expo-haptics@14.0.1_expo@52.0.37_@babel+core@7.26.8_@babel+preset-env@7.26.8_@babel+core@7.26_6j4iyrktrap76wyf5ffvwfcwie/node_modules/expo-haptics/ios`)"
   - "ExpoHead (from `../node_modules/.pnpm/expo-router@4.0.17_2l52cfz6gzb6fcojzxhlbgdqti/node_modules/expo-router/ios`)"
   - "ExpoKeepAwake (from `../node_modules/.pnpm/expo-keep-awake@14.0.3_expo@52.0.37_@babel+core@7.26.8_@babel+preset-env@7.26.8_@babel+core@7_wsrssayq2ncp54ll4t5zwitkwe/node_modules/expo-keep-awake/ios`)"
   - "ExpoLinearGradient (from `../node_modules/.pnpm/expo-linear-gradient@14.0.2_expo@52.0.37_@babel+core@7.26.8_@babel+preset-env@7.26.8_@babel+c_flpj7nkmcls52seitpn5g52vse/node_modules/expo-linear-gradient/ios`)"
@@ -2119,6 +2160,7 @@ DEPENDENCIES:
   - "RNDateTimePicker (from `../node_modules/@react-native-community/datetimepicker`)"
   - RNGestureHandler (from `../node_modules/react-native-gesture-handler`)
   - "RNGoogleSignin (from `../node_modules/@react-native-google-signin/google-signin`)"
+  - "rnmapbox-maps (from `../node_modules/@rnmapbox/maps`)"
   - RNReanimated (from `../node_modules/react-native-reanimated`)
   - RNSnackbar (from `../node_modules/react-native-snackbar`)
   - RNVectorIcons (from `../node_modules/react-native-vector-icons`)
@@ -2131,7 +2173,12 @@ SPEC REPOS:
     - GoogleSignIn
     - GTMAppAuth
     - GTMSessionFetcher
+    - MapboxCommon
+    - MapboxCoreMaps
+    - MapboxMaps
+    - MapboxMobileEvents
     - SocketRocket
+    - Turf
 
 EXTERNAL SOURCES:
   boost:
@@ -2162,12 +2209,16 @@ EXTERNAL SOURCES:
     :path: "../node_modules/.pnpm/expo-apple-authentication@7.1.3_expo@52.0.37_@babel+core@7.26.8_@babel+preset-env@7.26.8_@bab_dupdvikkhqe32ikgsmz2l4itom/node_modules/expo-apple-authentication/ios"
   ExpoAsset:
     :path: "../node_modules/.pnpm/expo-asset@11.0.4_expo@52.0.37_@babel+core@7.26.8_@babel+preset-env@7.26.8_@babel+core@7.26.8_d7imdkac3xezqbwy5fhjcragpe/node_modules/expo-asset/ios"
+  ExpoBlur:
+    :path: "../node_modules/.pnpm/expo-blur@14.0.3_expo@52.0.37_@babel+core@7.26.8_@babel+preset-env@7.26.8_@babel+core@7.26.8__dmdddf3d432ozorcrtqyayg3lq/node_modules/expo-blur/ios"
   ExpoFileSystem:
     :path: "../node_modules/.pnpm/expo-file-system@18.0.11_expo@52.0.37_@babel+core@7.26.8_@babel+preset-env@7.26.8_@babel+core_jnyka4ba4dmyuv26haipscbrlm/node_modules/expo-file-system/ios"
   ExpoFont:
     :path: "../node_modules/.pnpm/expo-font@13.0.3_expo@52.0.37_@babel+core@7.26.8_@babel+preset-env@7.26.8_@babel+core@7.26.8__7xxbyudplhhyokwz3hqbm5pugq/node_modules/expo-font/ios"
   ExpoGooglePlaces:
     :path: "../node_modules/.pnpm/expo-google-places@0.2.5_expo@52.0.37_@babel+core@7.26.8_@babel+preset-env@7.26.8_@babel+core_6xu76bunzt5ad3u7rkospdz5ae/node_modules/expo-google-places/ios"
+  ExpoHaptics:
+    :path: "../node_modules/.pnpm/expo-haptics@14.0.1_expo@52.0.37_@babel+core@7.26.8_@babel+preset-env@7.26.8_@babel+core@7.26_6j4iyrktrap76wyf5ffvwfcwie/node_modules/expo-haptics/ios"
   ExpoHead:
     :path: "../node_modules/.pnpm/expo-router@4.0.17_2l52cfz6gzb6fcojzxhlbgdqti/node_modules/expo-router/ios"
   ExpoKeepAwake:
@@ -2325,6 +2376,8 @@ EXTERNAL SOURCES:
     :path: "../node_modules/react-native-gesture-handler"
   RNGoogleSignin:
     :path: "../node_modules/@react-native-google-signin/google-signin"
+  rnmapbox-maps:
+    :path: "../node_modules/@rnmapbox/maps"
   RNReanimated:
     :path: "../node_modules/react-native-reanimated"
   RNSnackbar:
@@ -2350,9 +2403,11 @@ SPEC CHECKSUMS:
   ExpoAdapterGoogleSignIn: f5ca2b67502442629d99dbe202b6ae821d77c75d
   ExpoAppleAuthentication: 52631ed9dcb71c65712a447bbb9a5667bb8fcf0c
   ExpoAsset: 4033893dfb333b444bf45e951351254137b658d5
+  ExpoBlur: 392c1207f71d0ecf22371621c1fbd44ba84d9742
   ExpoFileSystem: 2d804c73034c0d65eb2a640e0a77627033b69edc
   ExpoFont: 38656978c2a4022fb7e0c43e4968d66340f5e2f3
   ExpoGooglePlaces: 3d88c720b6cd2a9c2c883811826e31c5fa47e50b
+  ExpoHaptics: 8d199b2f33245ea85289ff6c954c7ee7c00a5b5d
   ExpoHead: 5d1c5c20e3933db5d9ca349424cb3b9a4a84b706
   ExpoKeepAwake: b0171a73665bfcefcfcc311742a72a956e6aa680
   ExpoLinearGradient: 35ebd83b16f80b3add053a2fd68cc328ed927f60
@@ -2373,6 +2428,10 @@ SPEC CHECKSUMS:
   GTMAppAuth: f69bd07d68cd3b766125f7e072c45d7340dea0de
   GTMSessionFetcher: 5aea5ba6bd522a239e236100971f10cb71b96ab6
   hermes-engine: eb4a80f6bf578536c58a44198ec93a30f6e69218
+  MapboxCommon: cc47fafe3fe5408ca49240aa80fa64f27f275711
+  MapboxCoreMaps: 35685edba03e44468aed57c3dfd7f8795edafda8
+  MapboxMaps: f87023cf0d72b180b40ea0b6fb4b2d7db6b73b71
+  MapboxMobileEvents: d044b9edbe0ec7df60f6c2c9634fe9a7f449266b
   RCT-Folly: 84578c8756030547307e4572ab1947de1685c599
   RCTDeprecation: 7691283dd69fed46f6653d376de6fa83aaad774c
   RCTRequired: eac044a04629288f272ee6706e31f81f3a2b4bfe
@@ -2435,10 +2494,12 @@ SPEC CHECKSUMS:
   RNDateTimePicker: cfde47eb14e5ee6b9744f2764bcd1085e6590d9b
   RNGestureHandler: 16ef3dc2d7ecb09f240f25df5255953c4098819b
   RNGoogleSignin: f57ee39074735c97813454e0ff874659df67e302
+  rnmapbox-maps: dc814adf1a4675b35e168a5ea327234b265b2d5d
   RNReanimated: b2bf29c284b7e10694b1695d01909b10ba1fdd2b
   RNSnackbar: f5ad232be3bcab6d5ef7e3b02cdaae621c944b75
   RNVectorIcons: a24016b773380b1aa37fca501ec6b94a951890a0
   SocketRocket: d4aabe649be1e368d1318fdf28a022d714d65748
+  Turf: aa2ede4298009639d10db36aba1a7ebaad072a5e
   Yoga: 90d80701b27946c4b23461c00a7207f300a6ff71
 
 PODFILE CHECKSUM: 1cae799b31e9dbc129944d329d36650e388717c3

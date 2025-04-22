@@ -10,9 +10,8 @@ import MapView, { Marker, Polyline } from "react-native-maps";
 import { useLocalSearchParams } from "expo-router";
 import axios from "axios";
 import { supabase } from "@/lib/supabase";
-import { FontAwesome } from "@expo/vector-icons";
 
-const GOOGLE_MAPS_API_KEY = process.env.EXPO_PUBLIC_API_KEY;
+const GOOGLE_MAPS_API_KEY = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY;
 const polyline = require("@mapbox/polyline");
 
 export default function TripScreen() {
