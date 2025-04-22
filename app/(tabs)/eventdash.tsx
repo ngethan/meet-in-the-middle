@@ -29,10 +29,11 @@ import {
   GestureHandlerRootView,
 } from "react-native-gesture-handler";
 import moment from "moment";
+import { Search, X } from "lucide-react-native";
 
 const { width, height } = Dimensions.get("window");
 
-const GOOGLE_MAPS_API_KEY = process.env.EXPO_PUBLIC_API_KEY;
+const GOOGLE_MAPS_API_KEY = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY;
 const RADIUS = 50000;
 
 export default function EventDashBoard() {
@@ -49,10 +50,9 @@ export default function EventDashBoard() {
   const [isOverlayVisible, setOverlayVisible] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const { user, signOut } = useAuth();
   const router = useRouter();
 
-  const TICKETMASTER_API_KEY = "e48QyQe8dYPBlcGspizf6dtnvpGfDojV"; // Replace with your Ticketmaster API key
+  const TICKETMASTER_API_KEY = process.env.EXPO_PUBLIC_TICKETMASTER_API_KEY;
 
   const fetchEvents = async (lat: number, lon: number) => {
     console.log("latitude: ", lat, "longitude: ", lon);
@@ -215,25 +215,32 @@ export default function EventDashBoard() {
   };
 
   return (
-    <View className="flex-1 bg-gray-100">
+    <View className="flex-1 bg-gray-50">
       {/* Header */}
-      <View className="flex-row justify-between items-center px-6 pt-16 pb-4 bg-blue-400 shadow-md">
-        <TouchableOpacity onPress={toggleDrawer}>
-          <Menu size={32} color="black" />
+      <View className="flex-row justify-between items-center px-6 pt-16 pb-4 bg-white shadow-sm">
+        <TouchableOpacity
+          className="p-2 rounded-full active:bg-gray-100"
+          onPress={toggleDrawer}
+        >
+          <Menu size={28} color="#333" />
         </TouchableOpacity>
 
         <TouchableOpacity
-          onPress={() => {
-            setOverlayVisible(true);
-          }}
+          className="flex-row items-center bg-white py-2 px-3 rounded-full border border-gray-200 active:bg-gray-50"
+          onPress={() => setOverlayVisible(true)}
         >
-          <Text className="text-lg font-bold text-gray-800">
+          <MapPin size={16} color="#3b82f6" className="mr-2" />
+          <Text className="text-gray-800 font-semibold mr-1" numberOfLines={1}>
             {currentLocation}
           </Text>
+          <ChevronDown size={16} color="#666" />
         </TouchableOpacity>
 
-        <TouchableOpacity onPress={() => router.push("/profile")}>
-          <UserCircle2Icon strokeWidth={1.5} size={32} color="black" />
+        <TouchableOpacity
+          className="p-2 rounded-full active:bg-gray-100"
+          onPress={() => router.push("/profile")}
+        >
+          <UserCircle2Icon strokeWidth={1.5} size={28} color="#333" />
         </TouchableOpacity>
       </View>
 
@@ -243,23 +250,62 @@ export default function EventDashBoard() {
         keyExtractor={(item: any) => item.id}
         renderItem={({ item }) => (
           <TouchableOpacity
-            className="mt-5 bg-white rounded-2xl shadow-lg overflow-hidden mx-5"
-            activeOpacity={0.8}
-            onPress={() => router.push(`/event/${item.id}`)} // Route to event detail page
+            className="mt-4 bg-white rounded-2xl shadow-md overflow-hidden mx-4 mb-2"
+            activeOpacity={0.9}
+            onPress={() => router.push(`/event/${item.id}`)}
           >
-            <Image source={{ uri: item.image }} className="w-full h-80" />
-            <View className="absolute bottom-0 left-0 right-0 bg-black/50 p-4">
+            <Image
+              source={{ uri: item.image }}
+              className="w-full h-72"
+              resizeMode="cover"
+            />
+            <View className="absolute bottom-0 left-0 right-0 bg-black/60 p-4">
               <Text className="text-white text-xl font-bold">{item.title}</Text>
-              <Text className="text-yellow-300 font-semibold">{item.date}</Text>
+              <View className="flex-row items-center mt-1">
+                <Text className="text-yellow-300 font-semibold">
+                  {item.date}
+                </Text>
+                {location && item.latitude && item.longitude && (
+                  <View className="flex-row items-center ml-3">
+                    <MapPin size={14} color="#fcd34d" />
+                    <Text className="text-yellow-300 font-semibold ml-1">
+                      {calculateDistance(
+                        location.coords.latitude,
+                        location.coords.longitude,
+                        item.latitude,
+                        item.longitude,
+                      )}{" "}
+                      km away
+                    </Text>
+                  </View>
+                )}
+              </View>
             </View>
           </TouchableOpacity>
         )}
         contentContainerStyle={{ paddingBottom: 100 }}
         showsVerticalScrollIndicator={false}
+        ListEmptyComponent={
+          !loading ? (
+            <View className="items-center justify-center py-20">
+              <Text className="text-gray-500 text-lg">
+                No events found nearby
+              </Text>
+              <TouchableOpacity
+                className="mt-4 bg-blue-500 px-6 py-3 rounded-full"
+                onPress={() => setOverlayVisible(true)}
+              >
+                <Text className="text-white font-semibold">
+                  Change Location
+                </Text>
+              </TouchableOpacity>
+            </View>
+          ) : null
+        }
       />
       <NavigationDrawer onClose={toggleDrawer} isOpen={drawerOpen} />
 
-      {/* 📌 Overlay Modal for Searching Locations */}
+      {/* Location Search Modal */}
       <GestureHandlerRootView className="flex-1">
         <Modal animationType="slide" visible={isOverlayVisible} transparent>
           <View className="flex-1 justify-end bg-black/50">
@@ -268,20 +314,36 @@ export default function EventDashBoard() {
                 if (e.nativeEvent.translationY > 100) setOverlayVisible(false);
               }}
             >
-              <View className="w-full h-[70%] bg-white rounded-t-2xl p-6 shadow-xl">
+              <View className="w-full h-[70%] bg-white rounded-t-3xl p-6 shadow-xl">
                 {/* Drag Indicator */}
-                <View className="w-14 h-1 bg-gray-300 rounded-full mx-auto mb-4" />
+                <View className="w-12 h-1 bg-gray-300 rounded-full mx-auto mb-6" />
+
+                <Text className="text-2xl font-bold text-gray-900 mb-2">
+                  Change Location
+                </Text>
+                <Text className="text-gray-500 mb-4">
+                  Search for events in a different area
+                </Text>
 
                 {/* Search Input */}
-                <TextInput
-                  className="border border-gray-300 p-3 rounded-lg bg-gray-100"
-                  placeholder="Search for location..."
-                  value={searchText}
-                  onChangeText={(text) => {
-                    setSearchText(text);
-                    searchLocation(text);
-                  }}
-                />
+                <View className="flex-row items-center bg-gray-100 px-4 py-3 rounded-xl mb-4 border border-gray-200">
+                  <Search size={20} color="#9ca3af" className="mr-2" />
+                  <TextInput
+                    className="flex-1 text-gray-800 text-base"
+                    placeholder="Search for location..."
+                    value={searchText}
+                    onChangeText={(text) => {
+                      setSearchText(text);
+                      searchLocation(text);
+                    }}
+                    placeholderTextColor="#9ca3af"
+                  />
+                  {searchText ? (
+                    <TouchableOpacity onPress={() => setSearchText("")}>
+                      <X size={18} color="#9ca3af" />
+                    </TouchableOpacity>
+                  ) : null}
+                </View>
 
                 {/* Search Results List */}
                 <FlatList
@@ -291,14 +353,28 @@ export default function EventDashBoard() {
                     <TouchableOpacity
                       onPress={() => {
                         changeLocation(item);
-                        setSearchText(""); // Clear search text
-                        setOverlayVisible(false); // Close modal after selection
+                        setSearchText("");
+                        setOverlayVisible(false);
                       }}
-                      className="p-4 border-b border-gray-200"
+                      className="py-3 px-2 border-b border-gray-100 active:bg-gray-50 rounded-lg"
                     >
-                      <Text className="text-gray-800">{item.description}</Text>
+                      <View className="flex-row items-center">
+                        <MapPin size={16} color="#3b82f6" className="mr-3" />
+                        <Text className="text-gray-800">
+                          {item.description}
+                        </Text>
+                      </View>
                     </TouchableOpacity>
                   )}
+                  ListEmptyComponent={
+                    searchText ? (
+                      <View className="items-center py-8">
+                        <Text className="text-gray-500">
+                          No locations found
+                        </Text>
+                      </View>
+                    ) : null
+                  }
                 />
               </View>
             </PanGestureHandler>
@@ -306,7 +382,7 @@ export default function EventDashBoard() {
         </Modal>
       </GestureHandlerRootView>
 
-      {/* 📌 Loading Animation */}
+      {/* Loading Animation */}
       <LoadingOverlay
         visible={loading}
         type="dots"

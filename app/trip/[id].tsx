@@ -27,6 +27,7 @@ import {
   ChevronRight,
   Search,
   Plus,
+  X,
 } from "lucide-react-native";
 import moment from "moment";
 import axios from "axios";
@@ -39,6 +40,11 @@ import {
 import LoadingOverlay from "../../components/loadingoverlay";
 import DropDownPicker from "react-native-dropdown-picker";
 import { LocationProvider, useLocationTypes } from "@/context/LocationProvider";
+import { LinearGradient } from "expo-linear-gradient";
+import { Calendar } from "lucide-react-native";
+import { Users } from "lucide-react-native";
+import { BlurView } from "expo-blur";
+import { StyleSheet } from "react-native";
 
 // // Sample some categories
 // const typeMappings: Record<string, { label: string; value: string }> = {
@@ -150,7 +156,7 @@ export default function TripDetailsScreen() {
     culture: ["museum", "gallery", "theater", "theatre", "cultural", "art"],
     sports: ["sports", "gym", "fitness", "stadium", "arena"],
   };
-  const GOOGLE_MAPS_API_KEY = process.env.EXPO_PUBLIC_API_KEY;
+  const GOOGLE_MAPS_API_KEY = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY;
   useEffect(() => {
     fetchTripDetails();
   }, []);
@@ -796,271 +802,360 @@ export default function TripDetailsScreen() {
   };
 
   return (
-    <View className="flex-1 bg-gray-100">
+    <View className="flex-1 bg-gray-50">
       <GestureHandlerRootView className="flex-1">
         <ScrollView
           contentContainerStyle={{
             flexGrow: 1,
             paddingBottom: 300 + 30 * participants.length,
-          }} // ✅ Ensures scrollability
+          }}
           showsVerticalScrollIndicator={false}
+          className="relative"
         >
-          {/* 📌 Header */}
-          <View className="flex-row justify-between items-center px-6 py-16 bg-white shadow-lg border-b border-gray-300">
-            <TouchableOpacity onPress={() => router.back()} className="p-2">
-              <ArrowLeft size={28} color="black" />
+          {/* Header */}
+          <View className="flex-row justify-between items-center px-6 py-16 bg-white shadow-md border-b border-gray-200">
+            <TouchableOpacity
+              onPress={() => router.back()}
+              className="p-2 bg-gray-100 rounded-full shadow-sm active:bg-gray-200"
+            >
+              <ArrowLeft size={24} color="#333" />
             </TouchableOpacity>
-            <Text className="text-lg font-bold text-black">
-              Trip: {trip?.name || "Loading..."}
+            <Text className="text-xl font-bold text-gray-800">
+              {trip?.name || "Loading trip..."}
             </Text>
+            <View style={{ width: 28 }} />
           </View>
 
-          {/* 📌 Trip Destination */}
-          <Image
-            source={{
-              uri: trip?.bestPhotos?.[0] || "https://via.placeholder.com/800",
-            }}
-            className="w-[95%] h-[50%] rounded-lg mx-4 mt-4"
-          />
-          <Text className="text-4xl font-bold p-6">
-            {trip?.bestLocation || "Unknown Destination"}
-          </Text>
-
-          {/* 📌 Destination types */}
-          <View className="flex-row flex-wrap px-6">
-            {trip?.bestTypes?.map((type) => (
-              <Text
-                key={type}
-                className="bg-gray-200 px-4 py-2 rounded-full m-1"
-              >
-                {type}
+          {/* Hero Image with Gradient Overlay */}
+          <View className="relative w-full h-72 mt-2">
+            <Image
+              source={{
+                uri: trip?.bestPhotos?.[0] || "https://via.placeholder.com/800",
+              }}
+              className="w-full h-full"
+              style={{ borderRadius: 0 }}
+            />
+            <LinearGradient
+              colors={["transparent", "rgba(0,0,0,0.7)"]}
+              style={{
+                position: "absolute",
+                left: 0,
+                right: 0,
+                bottom: 0,
+                height: "50%",
+                borderRadius: 0,
+              }}
+            />
+            <View className="absolute bottom-4 left-6">
+              <Text className="text-3xl font-bold text-white mb-1 shadow-text">
+                {trip?.bestLocation || "Discover Your Destination"}
               </Text>
-            ))}
-          </View>
 
-          {/* <View>
-            {bestLocation.opening_hours && bestLocation.opening_hours.length > 0 ? (
-              <View>
-                {bestLocation.opening_hours.map((hours, index) => (
-                  <Text key={index} className="text-gray-700">
-                    {`Day ${index + 1}: Open - ${hours.open.time}, Close - ${hours.close.time}`}
+              {/* Destination types */}
+              <View className="flex-row flex-wrap mt-2">
+                {trip?.bestTypes?.map((type) => (
+                  <Text
+                    key={type}
+                    className="bg-white/20 backdrop-blur-md px-3 py-1 rounded-full mr-2 mb-1 text-white text-xs font-medium"
+                  >
+                    {type}
                   </Text>
                 ))}
               </View>
-            ) : (
-              <Text className="text-gray-500">No opening hours available</Text>
-            )}
-          </View> */}
-
-          {/* 📌 Trip Details */}
-          <View className="p-6 bg-white rounded-lg shadow-md mx-4 mt-4">
-            <Text className="text-xl font-semibold text-gray-900">📅 When</Text>
-            <Text className="text-base text-gray-600 mt-1">
-              {trip?.startDate
-                ? moment(trip.startDate).format("MM/DD/YYYY - hh:mm A") +
-                  " to " +
-                  moment(trip.endDate).format("MM/DD/YYYY - hh:mm A")
-                : "Loading..."}
-            </Text>
-
-            {/* 📌 Participants */}
-            <Text className="text-lg font-semibold mt-4">Participants:</Text>
-            <View className="flex-row flex-wrap mt-2">
-              {participants.length > 0 ? (
-                participants.map((participant) => (
-                  <View
-                    key={participant.id}
-                    className="bg-purple-300 px-3 py-3 rounded-full m-1"
-                  >
-                    <Text className="text-sm">{participant.fullName}</Text>
-                  </View>
-                ))
-              ) : (
-                <Text className="text-gray-500">No participants yet</Text>
-              )}
             </View>
           </View>
 
-          {/* 📌 List of Participants */}
-          {/* <Text className="text-lg font-bold text-gray-900 px-6 mt-4">Trip Participants</Text>
-        {participants.map((item) => (
-          <View
-            key={item.id}
-            className="bg-white p-4 rounded-xl mx-4 my-2 shadow-md border border-gray-200"
-          >
-            <Text className="text-lg font-bold text-gray-900">{item.full_name || "Unknown"}</Text>
-            <Text className="text-sm text-gray-500">
-              Starting Location: {item.starting_location || "Not set"}
-            </Text>
+          {/* Trip Details Card */}
+          <View className="mx-4 -mt-6 bg-white rounded-2xl shadow-lg p-6 z-10 border border-gray-100">
+            <View className="flex-row items-center mb-4">
+              <View className="w-10 h-10 rounded-full bg-indigo-100 items-center justify-center">
+                <Calendar size={20} color="#6366f1" />
+              </View>
+              <View className="ml-3">
+                <Text className="text-sm text-gray-500 font-medium">When</Text>
+                <Text className="text-base text-gray-800">
+                  {trip?.startDate
+                    ? moment(trip.startDate).format("MMM DD") +
+                      " - " +
+                      moment(trip.endDate).format("MMM DD, YYYY")
+                    : "Date not set"}
+                </Text>
+              </View>
+            </View>
+
+            <View className="flex-row items-center">
+              <View className="w-10 h-10 rounded-full bg-purple-100 items-center justify-center">
+                <Users size={20} color="#8b5cf6" />
+              </View>
+              <View className="ml-3 flex-1">
+                <Text className="text-sm text-gray-500 font-medium">
+                  Who's coming
+                </Text>
+                <View className="flex-row flex-wrap mt-1">
+                  {participants.length > 0 ? (
+                    participants.map((participant, index) => (
+                      <View
+                        key={participant.id}
+                        style={{
+                          marginLeft: index > 0 ? -8 : 0,
+                          zIndex: participants.length - index,
+                        }}
+                      >
+                        <View className="w-8 h-8 rounded-full bg-blue-400 items-center justify-center border-2 border-white">
+                          <Text className="text-xs font-bold text-white">
+                            {participant.fullName?.charAt(0) || "?"}
+                          </Text>
+                        </View>
+                      </View>
+                    ))
+                  ) : (
+                    <Text className="text-gray-500 text-sm">
+                      No participants yet
+                    </Text>
+                  )}
+                  {participants.length > 0 && (
+                    <Text className="text-gray-600 text-sm ml-2 mt-1">
+                      {participants.length}{" "}
+                      {participants.length === 1 ? "person" : "people"}
+                    </Text>
+                  )}
+                </View>
+              </View>
+            </View>
           </View>
-        ))} */}
 
-          {/* 📌 List of Participants - Now Clickable */}
-          <Text className="text-2xl font-bold text-gray-900 px-6 mt-6">
-            👥 Participants
-          </Text>
+          {/* Participants Section */}
+          <View className="mt-6 px-4">
+            <Text className="text-xl font-bold text-gray-800 mb-4 flex-row items-center">
+              <Users size={20} color="#333" className="mr-2" /> Participants
+            </Text>
 
-          {participants.map((item) => (
-            <TouchableOpacity
-              key={item.id}
-              className="bg-white p-4 rounded-xl mx-4 my-2 shadow-md border border-gray-200"
-              onPress={() => {
-                setSelectedParticipant(item); // Store selected participant
-                // setMapModalVisible(true); // Open the map picker modal
-                setPreferenceModalVisible(true);
-              }}
-            >
-              <Text className="text-lg font-bold text-gray-900">
-                {item.fullName || "Unknown"}
-              </Text>
-              <Text className="text-sm text-gray-500">
-                Preferences:{" "}
-                {(item.preferences || []).length > 0
-                  ? item.preferences?.join(", ")
-                  : "Click to choose preferences"}
-              </Text>
-              <Text className="text-sm text-gray-500">
-                {/* Starting Location: {item ? `${item?.startingLocation}` : "Click to choose preferences"} */}
-                {item.startingLocation ? (
-                  <Text>{`Location: ${item.startingLocation}`}</Text>
-                ) : (
-                  <Text>Loading location...</Text> // Or a fallback message
-                )}
-              </Text>
-            </TouchableOpacity>
-          ))}
+            {participants.map((item, index) => (
+              <TouchableOpacity
+                key={item.id}
+                className="bg-white mb-3 rounded-xl shadow-sm border border-gray-100 overflow-hidden"
+                onPress={() => {
+                  setSelectedParticipant(item);
+                  setPreferenceModalVisible(true);
+                }}
+                activeOpacity={0.7}
+              >
+                <View className="p-4">
+                  <View className="flex-row items-center justify-between">
+                    <View className="flex-row items-center">
+                      <View className="w-10 h-10 rounded-full bg-blue-400 items-center justify-center">
+                        <Text className="text-white font-bold">
+                          {item.fullName?.charAt(0) || "?"}
+                        </Text>
+                      </View>
+                      <Text className="text-lg font-semibold text-gray-800 ml-3">
+                        {item.fullName || "Unknown"}
+                      </Text>
+                    </View>
+                    <ChevronRight size={20} color="#9ca3af" />
+                  </View>
+
+                  <View className="mt-2 ml-13">
+                    {item.preferences && item.preferences.length > 0 ? (
+                      <View className="flex-row flex-wrap">
+                        {item.preferences.slice(0, 3).map((pref, idx) => (
+                          <Text
+                            key={idx}
+                            className="bg-indigo-50 text-indigo-600 text-xs px-2 py-1 rounded-full mr-1 mb-1"
+                          >
+                            {pref}
+                          </Text>
+                        ))}
+                        {item.preferences.length > 3 && (
+                          <Text className="text-gray-500 text-xs px-2 py-1">
+                            +{item.preferences.length - 3} more
+                          </Text>
+                        )}
+                      </View>
+                    ) : (
+                      <Text className="text-sm text-gray-500 italic">
+                        Tap to set preferences
+                      </Text>
+                    )}
+
+                    {item.startingLocation ? (
+                      <Text className="text-sm text-gray-600 mt-1 flex-row items-center">
+                        <MapPin size={12} color="#6b7280" className="mr-1" />
+                        {item.startingLocation}
+                      </Text>
+                    ) : (
+                      <Text className="text-sm text-gray-500 mt-1 italic">
+                        <MapPin size={12} color="#9ca3af" className="mr-1" />
+                        No starting location set
+                      </Text>
+                    )}
+                  </View>
+                </View>
+              </TouchableOpacity>
+            ))}
+          </View>
         </ScrollView>
 
-        {/* 📌 Floating Action Buttons */}
-        <View className="flex-row justify-around my-6 p-6">
-          <TouchableOpacity
-            className="bg-blue-400 px-6 py-3 rounded-full shadow-lg flex-row items-center"
-            onPress={() => {
-              if (!trip?.bestLocation) {
-                Alert.alert("Error", "Find the best location first.");
-                return;
-              }
-              router.push({
-                pathname: "/map",
-                params: {
-                  bestLatitude: trip.bestLatitude,
-                  bestLongitude: trip.bestLongitude,
-                  participants: JSON.stringify(participants),
-                },
-              });
-            }}
-          >
-            <Map size={20} color="white" />
-            <Text className="text-white font-bold ml-2">Show Routes</Text>
-          </TouchableOpacity>
+        {/* Action Buttons */}
+        <View className="absolute bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-4 py-4 shadow-lg">
+          <View className="flex-row justify-between">
+            <TouchableOpacity
+              className="bg-indigo-600 px-4 py-3 rounded-xl shadow-md flex-row items-center justify-center flex-1 mr-2"
+              onPress={handleFindBestLocation}
+              disabled={loading}
+              activeOpacity={0.8}
+            >
+              <Navigation2 size={18} color="white" />
+              <Text className="text-white font-bold ml-2">
+                Find Best Location
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              className="bg-purple-600 px-4 py-3 rounded-xl shadow-md flex-row items-center justify-center flex-1 ml-2"
+              onPress={() => {
+                if (!trip?.bestLocation) {
+                  Alert.alert("Error", "Find the best location first.");
+                  return;
+                }
+                router.push({
+                  pathname: "/map",
+                  params: {
+                    bestLatitude: trip.bestLatitude,
+                    bestLongitude: trip.bestLongitude,
+                    participants: JSON.stringify(participants),
+                  },
+                });
+              }}
+              activeOpacity={0.8}
+            >
+              <Map size={18} color="white" />
+              <Text className="text-white font-bold ml-2">Show Routes</Text>
+            </TouchableOpacity>
+          </View>
 
           <TouchableOpacity
-            className="bg-purple-300 px-6 py-3 rounded-full shadow-lg flex-row items-center"
+            className="bg-purple-400 mt-3 py-4 rounded-xl shadow-md flex-row items-center justify-center"
             onPress={startTrip}
+            activeOpacity={0.8}
           >
-            <Play size={28} color="white" />
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            className="bg-gray-300 px-3 py-3 rounded-full shadow-lg flex-row items-center mr-2"
-            onPress={handleFindBestLocation}
-            disabled={loading}
-          >
-            {
-              <>
-                <Navigation2 size={20} color="gray" />
-                <Text className="text-gray-800 font-bold ml-2">
-                  Get Best Location
-                </Text>
-              </>
-            }
+            <Play size={20} color="white" />
+            <Text className="text-white font-bold text-lg ml-2">
+              Start Trip
+            </Text>
           </TouchableOpacity>
         </View>
 
-        {/* 📌 Destination Preferences Modal */}
+        {/* Preferences Modal */}
         <Modal
           visible={preferenceModalVisible}
           transparent
           animationType="slide"
         >
-          <View className="flex-1 justify-center items-center bg-black/50">
-            <View className="bg-white w-[90%] rounded-3xl p-6 shadow-2xl">
-              <Text className="text-2xl font-bold text-gray-900 mb-4 text-center">
-                Choose Preferences
-              </Text>
+          <BlurView intensity={30} style={StyleSheet.absoluteFill} tint="dark">
+            <View className="flex-1 justify-end">
+              <View className="bg-white rounded-t-3xl p-6 shadow-2xl">
+                <View className="w-12 h-1 bg-gray-300 rounded-full mx-auto mb-6" />
 
-              <DropDownPicker
-                open={openDropdown}
-                value={selectedPreferences}
-                items={destinationOptions}
-                setOpen={setOpenDropdown}
-                setValue={setSelectedPreferences}
-                setItems={setAllPreferences}
-                multiple={true}
-                placeholder="Select preferences..."
-                style={{
-                  borderWidth: 1,
-                  borderColor: "#ddd",
-                  borderRadius: 12,
-                  backgroundColor: "#f9f9f9",
-                  paddingVertical: 12,
-                }}
-                dropDownContainerStyle={{
-                  backgroundColor: "#fff",
-                  borderWidth: 1,
-                  borderColor: "#ddd",
-                  borderRadius: 12,
-                }}
-              />
-
-              <TouchableOpacity
-                className="bg-blue-500 py-4 w-full rounded-2xl mt-6 shadow-md"
-                onPress={savePreferences}
-              >
-                <Text className="text-white font-bold text-center text-lg">
-                  Save Preferences
+                <Text className="text-2xl font-bold text-gray-900 mb-2">
+                  {selectedParticipant?.fullName}'s Preferences
                 </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                className="bg-purple-500 py-4 w-full rounded-2xl mt-4 shadow-md"
-                onPress={() => {
-                  setPreferenceModalVisible(false);
-                  setMapModalVisible(true);
-                }}
-              >
-                <Text className="text-white font-bold text-center text-lg">
-                  {" "}
-                  {typeof selectedLocation === "object"
-                    ? "Location Selected"
-                    : selectedLocation || "Set Starting Location"}{" "}
+                <Text className="text-gray-500 mb-6">
+                  Choose what you're interested in for this trip
                 </Text>
-              </TouchableOpacity>
 
-              <TouchableOpacity
-                className="mt-6"
-                onPress={() => setPreferenceModalVisible(false)}
-              >
-                <Text className="text-gray-600 text-center text-lg">
-                  Cancel
-                </Text>
-              </TouchableOpacity>
+                <DropDownPicker
+                  open={openDropdown}
+                  value={selectedPreferences}
+                  items={destinationOptions}
+                  setOpen={setOpenDropdown}
+                  setValue={setSelectedPreferences}
+                  setItems={setAllPreferences}
+                  multiple={true}
+                  placeholder="Select preferences..."
+                  style={{
+                    borderWidth: 1,
+                    borderColor: "#e5e7eb",
+                    borderRadius: 12,
+                    backgroundColor: "#f9fafb",
+                    paddingVertical: 14,
+                  }}
+                  textStyle={{
+                    fontSize: 16,
+                    color: "#4b5563",
+                  }}
+                  dropDownContainerStyle={{
+                    backgroundColor: "#fff",
+                    borderWidth: 1,
+                    borderColor: "#e5e7eb",
+                    borderRadius: 12,
+                    shadowColor: "#000",
+                    shadowOpacity: 0.1,
+                    shadowRadius: 10,
+                    elevation: 5,
+                  }}
+                  selectedItemContainerStyle={{
+                    backgroundColor: "#ede9fe",
+                  }}
+                  selectedItemLabelStyle={{
+                    color: "#6d28d9",
+                    fontWeight: "bold",
+                  }}
+                />
+
+                <TouchableOpacity
+                  className="bg-blue-500 py-4 w-full rounded-xl mt-6 shadow-md"
+                  onPress={savePreferences}
+                  activeOpacity={0.8}
+                >
+                  <Text className="text-white font-bold text-center text-lg">
+                    Save Preferences
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  className="bg-blue-500 py-4 w-full rounded-xl mt-4 shadow-md"
+                  onPress={() => {
+                    setPreferenceModalVisible(false);
+                    setMapModalVisible(true);
+                  }}
+                  activeOpacity={0.8}
+                >
+                  <Text className="text-white font-bold text-center text-lg">
+                    {typeof selectedLocation === "object"
+                      ? "Location Selected"
+                      : selectedLocation || "Set Starting Location"}
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  className="py-4 mt-4"
+                  onPress={() => setPreferenceModalVisible(false)}
+                >
+                  <Text className="text-gray-600 text-center text-lg font-medium">
+                    Cancel
+                  </Text>
+                </TouchableOpacity>
+              </View>
             </View>
-          </View>
+          </BlurView>
         </Modal>
 
-        {/* 📌 Map Picker Modal */}
+        {/* Map Picker Modal */}
         <Modal visible={mapModalVisible} transparent animationType="slide">
-          <View className="flex-1 bg-black/50 backdrop-blur-md justify-center items-center">
-            <View className="w-[90%] h-[80%] bg-white rounded-2xl shadow-xl overflow-hidden">
-              {/* 📌 Header */}
-              <Text className="text-lg font-bold text-gray-900 text-center my-4">
-                Update Starting Location for {selectedParticipant?.fullName}
-              </Text>
+          <View className="flex-1 bg-black/50 backdrop-blur-md">
+            <View className="flex-1 mt-12 bg-white rounded-t-3xl shadow-xl overflow-hidden">
+              {/* Header */}
+              <View className="p-4 border-b border-gray-200 bg-white">
+                <View className="w-12 h-1 bg-gray-300 rounded-full mx-auto mb-4" />
+                <Text className="text-xl font-bold text-gray-900 text-center">
+                  {selectedParticipant?.fullName}'s Starting Point
+                </Text>
+              </View>
 
-              {/* 📌 Map View */}
+              {/* Map View */}
               <MapView
-                style={{ width: "100%", height: "75%" }}
+                style={{ width: "100%", height: "70%" }}
                 initialRegion={{
                   latitude: selectedParticipant?.latitude || 38.65709289910062,
                   longitude:
@@ -1071,169 +1166,214 @@ export default function TripDetailsScreen() {
                 onPress={(e) => handleSelectLocation(e.nativeEvent.coordinate)}
               >
                 {selectedLocation && (
-                  <Marker coordinate={selectedLocation} title="New Location" />
+                  <Marker coordinate={selectedLocation} title="New Location">
+                    <View className="bg-indigo-500 p-2 rounded-full border-2 border-white">
+                      <MapPin size={20} color="white" />
+                    </View>
+                  </Marker>
                 )}
               </MapView>
 
-              {/* 📌 Change Location Button */}
+              {/* Search Button */}
               <TouchableOpacity
-                className="bg-orange-500 px-4 py-3 mx-4 my-2 rounded-lg shadow-lg"
+                className="absolute top-20 right-0 left-0 mx-auto w-5/6 bg-white py-3 px-4 rounded-full shadow-lg flex-row items-center border border-gray-200"
                 onPress={() => {
                   setMapModalVisible(false);
                   setOverlayVisible(true);
                 }}
               >
-                <Text className="text-white font-bold text-center ">
-                  Search Your Location
+                <Search size={20} color="#6b7280" />
+                <Text className="text-gray-500 ml-2 flex-1">
+                  Search for a location...
                 </Text>
               </TouchableOpacity>
 
-              {/* 📌 Confirm & Cancel Buttons */}
-              <View className="flex-row justify-between p-4 bg-white border-t border-gray-200">
-                <TouchableOpacity
-                  className="bg-orange-500 py-3 w-[48%] rounded-xl shadow-lg"
-                  onPress={confirmLocation}
-                >
-                  <Text className="text-white font-bold text-center text-lg">
-                    Confirm
-                  </Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  className="bg-gray-300 py-3 w-[48%] rounded-xl"
-                  onPress={() => {
-                    setMapModalVisible(false);
-                    setSelectedLocation(null);
-                    setOverlayVisible(false);
-                    setPreferenceModalVisible(true);
-                  }}
-                >
-                  <Text className="text-gray-800 font-bold text-center text-lg">
-                    Cancel
-                  </Text>
-                </TouchableOpacity>
+              {/* Action Buttons */}
+              <View className="p-4 bg-white border-t border-gray-200">
+                <View className="flex-row justify-between">
+                  <TouchableOpacity
+                    className="bg-gradient-to-r from-indigo-500 to-purple-600 py-4 w-[48%] rounded-xl shadow-md"
+                    onPress={confirmLocation}
+                    activeOpacity={0.8}
+                  >
+                    <Text className="text-white font-bold text-center text-lg">
+                      Confirm
+                    </Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    className="bg-gray-200 py-4 w-[48%] rounded-xl"
+                    onPress={() => {
+                      setMapModalVisible(false);
+                      setSelectedLocation(null);
+                      setOverlayVisible(false);
+                      setPreferenceModalVisible(true);
+                    }}
+                  >
+                    <Text className="text-gray-800 font-bold text-center text-lg">
+                      Cancel
+                    </Text>
+                  </TouchableOpacity>
+                </View>
               </View>
             </View>
           </View>
         </Modal>
 
+        {/* Location Selection Modal */}
         <Modal
           visible={locationSelectionModalVisible}
           transparent
           animationType="slide"
         >
-          <View className="flex-1 justify-center items-center bg-black/50">
-            <View className="max-h-[500px] bg-white w-[90%] rounded-3xl p-6 shadow-2xl">
-              <Text className="text-2xl font-bold text-gray-900 mb-4 text-center">
-                Choose a Destination
-              </Text>
-              <FlatList
-                data={topLocations}
-                keyExtractor={(item) => item.place_id}
-                renderItem={({ item }) => {
-                  const isOpen = isOpenDuringTrip(
-                    item.opening_hours,
-                    trip?.startDate,
-                    trip?.endDate,
-                  );
-                  // console.log("Is the place open during the trip: ", isOpen? "Yes" : "No");
-                  return (
-                    <TouchableOpacity
-                      onPress={() => {
-                        updateBestLocation(item);
-                        setLocationSelectionModalVisible(false);
-                      }}
-                      className="bg-white rounded-lg shadow-lg mx-4 my-2 p-4 flex-row items-start space-x-4 border border-gray-200"
-                    >
-                      {/* Location Image */}
-                      <Image
-                        source={{
-                          uri:
-                            item.photos && item.photos[0]
-                              ? `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photoreference=${item.photos[0].photo_reference}&key=${GOOGLE_MAPS_API_KEY}`
-                              : "https://via.placeholder.com/150",
+          <BlurView intensity={30} style={StyleSheet.absoluteFill} tint="dark">
+            <View className="flex-1 justify-center items-center">
+              <View className="w-[90%] max-h-[80%] bg-white rounded-3xl shadow-2xl overflow-hidden">
+                <View className="p-6 border-b border-gray-100">
+                  <Text className="text-2xl font-bold text-gray-900 text-center">
+                    Choose Your Destination
+                  </Text>
+                  <Text className="text-gray-500 text-center mt-1">
+                    Select the best place for your trip
+                  </Text>
+                </View>
+
+                <FlatList
+                  data={topLocations}
+                  keyExtractor={(item) => item.place_id}
+                  contentContainerStyle={{ padding: 12 }}
+                  renderItem={({ item }) => {
+                    const isOpen = isOpenDuringTrip(
+                      item.opening_hours,
+                      trip?.startDate,
+                      trip?.endDate,
+                    );
+                    return (
+                      <TouchableOpacity
+                        onPress={() => {
+                          updateBestLocation(item);
+                          setLocationSelectionModalVisible(false);
                         }}
-                        className="w-20 h-20 rounded-lg"
-                        style={{ resizeMode: "cover" }}
-                      />
+                        className="bg-white rounded-xl shadow-sm mb-3 border border-gray-100 overflow-hidden active:bg-gray-50"
+                      >
+                        <View className="flex-row">
+                          {/* Location Image */}
+                          <Image
+                            source={{
+                              uri:
+                                item.photos && item.photos[0]
+                                  ? `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photoreference=${item.photos[0].photo_reference}&key=${GOOGLE_MAPS_API_KEY}`
+                                  : "https://via.placeholder.com/150",
+                            }}
+                            className="w-24 h-full"
+                            style={{ resizeMode: "cover" }}
+                          />
 
-                      <View className="flex-1">
-                        {/* Location Name */}
-                        <Text className="text-lg font-semibold text-gray-900 mx-3">
-                          {item.name}
-                        </Text>
+                          <View className="flex-1 p-3">
+                            <View className="flex-row justify-between items-start">
+                              <Text className="text-lg font-semibold text-gray-900 flex-1 pr-2">
+                                {item.name}
+                              </Text>
+                              <ChevronRight size={20} color="#9ca3af" />
+                            </View>
 
-                        {/* Location Address */}
-                        <Text className="text-sm text-gray-600 mt-1 mx-3">
-                          {item.address}
-                        </Text>
-
-                        {/* Location Types */}
-                        <View className="flex-row flex-wrap mt-2 mx-3">
-                          {item.types.map((type: string, index: number) => (
-                            <Text
-                              key={index}
-                              className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full mr-2 mb-2"
-                            >
-                              {type}
+                            <Text className="text-sm text-gray-600 mt-1 flex-row items-center">
+                              <MapPin
+                                size={12}
+                                color="#6b7280"
+                                className="mr-1"
+                              />
+                              {item.address}
                             </Text>
-                          ))}
+
+                            {/* Location Types */}
+                            <View className="flex-row flex-wrap mt-2">
+                              {item.types
+                                .slice(0, 3)
+                                .map((type: string, index: number) => (
+                                  <Text
+                                    key={index}
+                                    className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full mr-1 mb-1"
+                                  >
+                                    {type}
+                                  </Text>
+                                ))}
+                              {item.types.length > 3 && (
+                                <Text className="text-xs text-gray-500 px-1">
+                                  +{item.types.length - 3}
+                                </Text>
+                              )}
+                            </View>
+
+                            {/* Opening Status */}
+                            <View className="mt-1">
+                              {isOpen ? (
+                                <Text className="text-xs text-green-600 font-medium">
+                                  ● Open during your trip
+                                </Text>
+                              ) : (
+                                <Text className="text-xs text-red-600 font-medium">
+                                  ● Closed during your trip
+                                </Text>
+                              )}
+                            </View>
+                          </View>
                         </View>
+                      </TouchableOpacity>
+                    );
+                  }}
+                />
 
-                        {/* Opening Hours */}
-                        <View className="flex-row flex-wrap mt-2 mx-4">
-                          {isOpen ? (
-                            <Text className="text-xs text-green-600 font-medium">
-                              Open During trip time
-                            </Text>
-                          ) : (
-                            <Text className="text-xs text-red-600 font-medium">
-                              Not Open During trip time
-                            </Text>
-                          )}
-                        </View>
-                      </View>
-
-                      {/* Right Arrow Icon */}
-                      <ChevronRight size={20} color="#aaa" />
-                    </TouchableOpacity>
-                  );
-                }}
-              />
-
-              <TouchableOpacity
-                className="mt-6 bg-gray-300 py-3 w-full rounded-xl"
-                onPress={() => setLocationSelectionModalVisible(false)}
-              >
-                <Text className="text-center text-lg font-bold text-gray-800">
-                  Cancel
-                </Text>
-              </TouchableOpacity>
+                <View className="p-4 border-t border-gray-100">
+                  <TouchableOpacity
+                    className="bg-gray-200 py-3 rounded-xl"
+                    onPress={() => setLocationSelectionModalVisible(false)}
+                  >
+                    <Text className="text-center text-gray-800 font-bold text-lg">
+                      Cancel
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
             </View>
-          </View>
+          </BlurView>
         </Modal>
 
-        {/* 📌 Overlay Modal for Searching Locations */}
+        {/* Search Overlay */}
         <Modal animationType="slide" visible={isOverlayVisible} transparent>
-          <View className="flex-1 justify-end bg-black/50">
+          <View className="flex-1 bg-black/30">
             <PanGestureHandler
               onGestureEvent={(e) => {
                 if (e.nativeEvent.translationY > 100) setOverlayVisible(false);
               }}
             >
-              <View className="w-full h-[70%] bg-white rounded-t-2xl p-6 shadow-xl">
+              <View className="w-full h-[70%] bg-white rounded-t-3xl p-6 shadow-xl mt-auto">
                 {/* Drag Indicator */}
-                <View className="w-14 h-1 bg-gray-300 rounded-full mx-auto mb-4" />
+                <View className="w-12 h-1 bg-gray-300 rounded-full mx-auto mb-6" />
+
+                <Text className="text-xl font-bold text-gray-900 mb-4">
+                  Search Location
+                </Text>
 
                 {/* Search Input */}
-                <TextInput
-                  className="border border-gray-300 p-3 rounded-lg bg-gray-100"
-                  placeholder="Search for location..."
-                  value={searchText}
-                  onChangeText={(text) => {
-                    setSearchText(text);
-                    searchLocation(text);
-                  }}
-                />
+                <View className="flex-row items-center bg-gray-100 px-4 py-3 rounded-xl mb-4 border border-gray-200">
+                  <Search size={20} color="#6b7280" />
+                  <TextInput
+                    className="flex-1 ml-2 text-gray-800 text-base"
+                    placeholder="Search for a location..."
+                    placeholderTextColor="#9ca3af"
+                    value={searchText}
+                    onChangeText={(text) => {
+                      setSearchText(text);
+                      searchLocation(text);
+                    }}
+                  />
+                  {searchText.length > 0 && (
+                    <TouchableOpacity onPress={() => setSearchText("")}>
+                      <X size={18} color="#9ca3af" />
+                    </TouchableOpacity>
+                  )}
+                </View>
 
                 {/* Search Results List */}
                 <FlatList
@@ -1242,26 +1382,41 @@ export default function TripDetailsScreen() {
                   renderItem={({ item }) => (
                     <TouchableOpacity
                       onPress={() => {
-                        setOverlayVisible(false); // Close modal after selection
-                        selectLocation(item.place_id); // Update starting location
-                        setSearchText(""); // Clear search text
+                        setOverlayVisible(false);
+                        selectLocation(item.place_id);
+                        setSearchText("");
                       }}
-                      className="p-4 border-b border-gray-200"
+                      className="py-3 px-2 border-b border-gray-100 flex-row items-center"
+                      activeOpacity={0.7}
                     >
-                      <Text className="text-gray-800">{item.description}</Text>
+                      <MapPin size={18} color="#6b7280" className="mr-3" />
+                      <Text className="text-gray-800 flex-1">
+                        {item.description}
+                      </Text>
+                      <ChevronRight size={18} color="#9ca3af" />
                     </TouchableOpacity>
                   )}
+                  ListEmptyComponent={
+                    searchText.length > 0 ? (
+                      <View className="py-8 items-center">
+                        <Text className="text-gray-500 text-center">
+                          No results found. Try a different search.
+                        </Text>
+                      </View>
+                    ) : null
+                  }
                 />
               </View>
             </PanGestureHandler>
           </View>
         </Modal>
       </GestureHandlerRootView>
-      {/* 📌 Loading Animation */}
+
+      {/* Loading Animation */}
       <LoadingOverlay
         visible={loading}
         type="dots"
-        message="Finding best location..."
+        message="Finding the perfect spot for everyone..."
       />
     </View>
   );

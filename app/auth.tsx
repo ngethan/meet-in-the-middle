@@ -69,10 +69,8 @@ export default function AuthScreen() {
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
-      options: {
-        data: { full_name: fullName },
-      },
     });
+    console.log(data, "sign up data");
 
     if (error) {
       Alert.alert("Error", error.message);
@@ -82,6 +80,14 @@ export default function AuthScreen() {
     }
 
     router.push("/(tabs)/home");
+
+    await new Promise((resolve) => setTimeout(resolve, 5000));
+    await supabase
+      .from("users")
+      .update({
+        fullName,
+      })
+      .eq("id", data?.user?.id);
   }
 
   async function resetPassword() {
@@ -206,11 +212,11 @@ export default function AuthScreen() {
         </View>
       </View>
       {/* 📌 Loading Animation */}
-      <LoadingOverlay
+      {/* <LoadingOverlay
         visible={loading}
         type="dots"
         message="Authenticating..."
-      />
+      /> */}
     </KeyboardAvoidingView>
   );
 }

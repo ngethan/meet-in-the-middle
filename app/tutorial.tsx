@@ -56,90 +56,100 @@ export default function TutorialScreen() {
   }));
 
   return (
-    <View className="flex-1 bg-gray-100">
-      <View className="flex-row items-center px-6 py-16 bg-blue-500 shadow-lg">
-        <TouchableOpacity onPress={() => router.back()} className="p-2">
-          <ArrowLeft size={24} color="white" />
+    <View className="flex-1 bg-neutral-50">
+      <View className="flex-row items-center px-6 py-16 bg-blue-600 shadow-md">
+        <TouchableOpacity
+          onPress={() => router.back()}
+          className="p-2 bg-white/20 rounded-full"
+        >
+          <ArrowLeft size={22} color="white" />
         </TouchableOpacity>
-        <Text className="text-lg font-bold text-white ml-4">App Tutorial</Text>
+        <Text className="text-xl font-bold text-white ml-4">App Tutorial</Text>
       </View>
 
-      <ScrollView className="p-6">
-        <View className="mb-6">
-          <Text className="text-2xl font-bold text-gray-900 text-center">
-            🚀 Welcome to Trip Planner!
+      <ScrollView className="p-6" showsVerticalScrollIndicator={false}>
+        <View className="mb-8">
+          <Text className="text-3xl font-bold text-gray-900 text-center">
+            Welcome to Trip Planner
           </Text>
-          <Text className="text-base text-gray-600 mt-2 text-center">
-            Your smart travel assistant for planning trips efficiently. Let's
-            get started!
+          <Text className="text-base text-gray-600 mt-3 text-center leading-relaxed">
+            Your smart travel assistant for planning trips efficiently and
+            making every meetup hassle-free.
           </Text>
         </View>
 
-        <View className="mb-12 bg-white p-6 rounded-xl shadow-md">
+        <View className="mb-8 bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
           <TouchableOpacity
             onPress={toggleExpand}
-            className="p-4 bg-blue-500 rounded-lg"
+            className="p-4 bg-blue-600 rounded-xl active:bg-blue-700"
           >
-            <Text className="text-lg font-bold text-white text-center">
-              {expanded ? "Hide Guide ⬆️" : "Show App Guide ⬇️"}
+            <Text className="text-base font-semibold text-white text-center">
+              {expanded ? "Hide Guide ↑" : "Show App Guide ↓"}
             </Text>
           </TouchableOpacity>
 
           <Animated.View style={animatedStyle}>
-            <ScrollView className="mt-4">
+            <ScrollView className="mt-6" showsVerticalScrollIndicator={false}>
               <Step
-                title="Step 1: Create a Group"
+                title="Create a Group"
                 description="Start by creating a group with your friends, colleagues, or family members."
+                number="1"
               />
 
               <Step
-                title="Step 2: Add Participants"
+                title="Add Participants"
                 description="Invite users to your trip by selecting them from your contacts."
+                number="2"
               />
 
               <Step
-                title="Step 3: Navigate To the Trips Screen"
+                title="Navigate To the Trips Screen"
                 description="Go to the collection of trips using the dropdown on the top right corner of the screen."
+                number="3"
               />
 
               <Step
-                title="Step 4: Create a New Trip"
-                description="Create a new trip with a new trip name and start date/time with end date/time. All users in the chat are default in the trip."
+                title="Create a New Trip"
+                description="Create a new trip with a name and schedule. All users in the chat are included by default."
+                number="4"
               />
 
               <Step
-                title="Step 5: Set Your Starting Location(s)"
+                title="Set Your Starting Location(s)"
                 description="Choose your starting location on the map or enter an address manually."
+                number="5"
               />
 
               <Step
-                title="Step 6: Get the Best Meeting Spot"
+                title="Get the Best Meeting Spot"
                 description="The app finds the most convenient location for everyone based on real-time travel data."
+                number="6"
               />
 
               <Step
-                title="Step 7: Navigate Easily"
+                title="Navigate Easily"
                 description="Get optimized routes and directions to the meeting point."
+                number="7"
               />
 
-              <View className="bg-gray-100 p-4 rounded-lg mt-4">
-                <Text className="text-lg font-bold text-gray-900">
-                  🔍 Extra Features
+              <View className="bg-blue-50 p-5 rounded-xl mt-6 border border-blue-100">
+                <Text className="text-lg font-bold text-gray-900 mb-4">
+                  Extra Features
                 </Text>
 
                 <Feature
                   Icon={MessageSquare}
-                  color="blue"
+                  color="#4F46E5"
                   text="Live Chat - Communicate with participants in real-time."
                 />
                 <Feature
                   Icon={Save}
-                  color="green"
+                  color="#10B981"
                   text="Save Trips - Keep your trips saved for future reference."
                 />
                 <Feature
                   Icon={Bus}
-                  color="purple"
+                  color="#8B5CF6"
                   text="Public Transport Integration - Get real-time transit info."
                 />
               </View>
@@ -149,16 +159,15 @@ export default function TutorialScreen() {
 
         <Animated.View style={[animatedGlowStyle]}>
           <TouchableOpacity
-            className="mb-12 bg-blue-500 p-6 rounded-xl"
+            className="mb-8 bg-blue-600 p-6 rounded-xl shadow-sm active:bg-blue-700"
             onPress={() => router.push("/auth")}
-            activeOpacity={0.7}
+            activeOpacity={0.8}
           >
-            <Text className="text-lg font-bold text-white text-center">
+            <Text className="text-xl font-bold text-white text-center">
               You're all set! 🎉
             </Text>
-            <Text className="text-base font-bold text-teal-200 mt-2 text-center">
-              Click to start planning your trips now and make every meetup
-              hassle-free!
+            <Text className="text-base text-white mt-3 text-center leading-relaxed">
+              Start planning your trips now and make every meetup effortless
             </Text>
           </TouchableOpacity>
         </Animated.View>
@@ -170,13 +179,22 @@ export default function TutorialScreen() {
 const Step = ({
   title,
   description,
+  number,
 }: {
   title: string;
   description: string;
+  number: string;
 }) => (
-  <View className="mb-4 bg-white p-4 rounded-lg shadow-sm">
-    <Text className="text-lg font-bold text-gray-900">{title}</Text>
-    <Text className="text-base text-gray-600 mt-2">{description}</Text>
+  <View className="mb-5 flex-row">
+    <View className="w-8 h-8 rounded-full bg-blue-100 items-center justify-center mr-4 mt-1">
+      <Text className="text-blue-600 font-bold">{number}</Text>
+    </View>
+    <View className="flex-1">
+      <Text className="text-lg font-semibold text-gray-900">{title}</Text>
+      <Text className="text-base text-gray-600 mt-1 leading-relaxed">
+        {description}
+      </Text>
+    </View>
   </View>
 );
 
@@ -189,8 +207,10 @@ const Feature = ({
   color: string;
   text: string;
 }) => (
-  <View className="flex-row items-center mt-4">
-    <Icon size={24} color={color} />
-    <Text className="ml-3 text-base text-gray-700">{text}</Text>
+  <View className="flex-row items-center mb-4 last:mb-0">
+    <View className="w-10 h-10 rounded-full bg-white items-center justify-center shadow-sm">
+      <Icon size={20} color={color} />
+    </View>
+    <Text className="ml-4 text-base text-gray-700 flex-1">{text}</Text>
   </View>
 );

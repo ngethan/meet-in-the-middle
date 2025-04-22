@@ -266,104 +266,127 @@ export default function EventDetail() {
 
   return (
     <SafeAreaView
-      className="flex-1 bg-neutral-50"
+      className="flex-1 bg-white"
       style={{
         paddingTop: Platform.OS === "android" ? StatusBar.currentHeight : 0,
       }}
     >
-      <ScrollView className="flex-1" bounces={false}>
+      <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
         {/* Hero Section with Image */}
         <View className="relative">
-          <Image source={{ uri: event.image }} className="w-full h-[50vh]" />
-
-          <View className="px-5 py-4">
-            <Text className="text-3xl font-bold text-gray-900">
-              {event.title}
-            </Text>
-            <Text className="text-lg text-gray-700 mt-2">
-              {event.date} | {event.time}
-            </Text>
-          </View>
+          <Image
+            source={{ uri: event.image }}
+            className="w-full h-[45vh]"
+            resizeMode="cover"
+          />
 
           <TouchableOpacity
             onPress={() => router.back()}
-            className="absolute top-4 left-4 w-10 h-10 bg-white/20 backdrop-blur-lg rounded-ios-full items-center justify-center"
+            className="absolute top-4 left-4 w-10 h-10 bg-black/30 backdrop-blur-md rounded-full items-center justify-center"
+            style={{ elevation: 3 }}
           >
-            <ArrowLeft size={24} color="white" />
+            <ArrowLeft size={22} color="white" />
           </TouchableOpacity>
+
+          <View className="absolute bottom-0 left-0 right-0 bg-black/40 backdrop-blur-sm px-5 py-6">
+            <Text className="text-white text-3xl font-bold">{event.title}</Text>
+            <Text className="text-white/90 text-base mt-1">
+              {moment(event.date).format("ddd, MMM D")} •{" "}
+              {moment(event.time, "HH:mm:ss").format("h:mm A")}
+            </Text>
+          </View>
         </View>
 
         {/* Content Section */}
-        <View className="px-5 py-2 space-y-6">
-          {/* Date & Time */}
-          <View className="space-y-4">
-            <View className="flex-row items-center space-x-4">
-              <Calendar size={20} color="#007AFF" />
-              <Text className="text-lg text-neutral-700">
-                {moment(event.date).format("MMMM DD, YYYY")}
+        <View className="px-5 py-6">
+          {/* Date & Time Card */}
+          <View className="bg-neutral-50 rounded-2xl p-4 mb-5 shadow-sm border border-neutral-100">
+            <View className="flex-row items-center mb-3">
+              <Calendar size={18} color="#0066CC" />
+              <Text className="text-base font-medium text-neutral-800 ml-3">
+                {moment(event.date).format("dddd, MMMM D, YYYY")}
               </Text>
             </View>
 
-            <View className="flex-row items-center space-x-4">
-              <Clock size={20} color="#007AFF" />
-              <Text className="text-lg text-neutral-700">
+            <View className="flex-row items-center">
+              <Clock size={18} color="#0066CC" />
+              <Text className="text-base font-medium text-neutral-800 ml-3">
                 {moment(event.time, "HH:mm:ss").format("h:mm A")}
               </Text>
             </View>
           </View>
 
           {/* Venue Information */}
-          <View className="my-5 bg-white p-5 rounded-ios-lg shadow-ios">
-            <View className="flex-row items-center space-x-4 mb-4">
-              <MapPin size={20} color="#007AFF" />
-              <Text className="text-xl font-semibold text-neutral-900">
-                Venue
+          <View className="bg-neutral-50 rounded-2xl p-5 mb-5 shadow-sm border border-neutral-100">
+            <View className="flex-row items-center mb-3">
+              <MapPin size={18} color="#0066CC" />
+              <Text className="text-lg font-semibold text-neutral-800 ml-3">
+                Location
               </Text>
             </View>
 
-            <View className="space-y-2">
-              <Text className="text-lg text-neutral-700">{event.venue}</Text>
-              <Text className="text-base text-neutral-500">
+            <View className="ml-7">
+              <Text className="text-base font-medium text-neutral-800">
+                {event.venue}
+              </Text>
+              <Text className="text-sm text-neutral-600 mt-1">
                 {event.venueAddress}
               </Text>
-              <Text className="text-base text-neutral-500">
+              <Text className="text-sm text-neutral-600">
                 {event.city}, {event.country}
               </Text>
+
+              <TouchableOpacity
+                className="mt-3 flex-row items-center"
+                onPress={() =>
+                  Linking.openURL(
+                    `https://maps.google.com/?q=${event.venue} ${event.city}`,
+                  )
+                }
+              >
+                <Text className="text-blue-600 font-medium">View on map</Text>
+              </TouchableOpacity>
             </View>
           </View>
 
           {/* Event Details */}
-          <View className="bg-white p-5 rounded-ios-lg shadow-ios">
-            <View className="flex-row items-center space-x-4 mb-4">
-              <Info size={20} color="#007AFF" />
-              <Text className="text-xl font-semibold text-neutral-900">
-                Event Details
+          <View className="bg-neutral-50 rounded-2xl p-5 mb-5 shadow-sm border border-neutral-100">
+            <View className="flex-row items-center mb-3">
+              <Info size={18} color="#0066CC" />
+              <Text className="text-lg font-semibold text-neutral-800 ml-3">
+                About Event
               </Text>
             </View>
 
-            <Text className="text-base text-neutral-700 leading-relaxed">
+            <Text className="text-base text-neutral-700 leading-relaxed ml-7">
               {event.description}
             </Text>
           </View>
 
           {/* Seatmap */}
           {event.seatmap && (
-            <Image
-              source={{ uri: event.seatmap }}
-              className="w-full h-[300px] rounded-ios-lg"
-              resizeMode="contain"
-            />
+            <View className="mb-5">
+              <Text className="text-lg font-semibold text-neutral-800 mb-3">
+                Seating Chart
+              </Text>
+              <Image
+                source={{ uri: event.seatmap }}
+                className="w-full h-[250px] rounded-2xl"
+                resizeMode="contain"
+              />
+            </View>
           )}
 
           {/* Ticket Button */}
           <TouchableOpacity
-            className="bg-primary py-4 rounded-ios-lg shadow-ios flex-row items-center justify-center mt-4 mb-8"
+            className="bg-blue-600 py-4 rounded-xl flex-row items-center justify-center mb-8 shadow-md"
             onPress={() => Linking.openURL(event.ticketUrl)}
+            activeOpacity={0.8}
           >
-            <Text className="text-white font-semibold text-lg mr-2">
+            <Text className="text-white font-bold text-lg mr-2">
               Get Tickets
             </Text>
-            <Ticket size={24} color="white" />
+            <Ticket size={20} color="white" />
           </TouchableOpacity>
         </View>
       </ScrollView>

@@ -18,9 +18,10 @@ import * as Location from "expo-location";
 import {
   GestureHandlerRootView,
   PanGestureHandler,
-} from "react-native-gesture-handler"; // !!! need to replace PanGestureHandler with an alternative !!!
+} from "react-native-gesture-handler";
 
-const GOOGLE_MAPS_API_KEY = process.env.EXPO_PUBLIC_API_KEY;
+const GOOGLE_MAPS_API_KEY = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY;
+console.log(GOOGLE_MAPS_API_KEY);
 const polyline = require("@mapbox/polyline");
 
 export default function MapScreen() {
@@ -292,15 +293,17 @@ export default function MapScreen() {
 
   return (
     <GestureHandlerRootView style={styles.container}>
-      {/* Map */}
       <MapView
-        style={[styles.map, selectedMode === "transit" && styles.mapTransit]}
+        style={styles.map}
         initialRegion={{
-          latitude: currentLocation?.latitude || 38.627, // Default WashU Location
+          latitude: currentLocation?.latitude || 38.627,
           longitude: currentLocation?.longitude || -90.1994,
           latitudeDelta: 0.1,
           longitudeDelta: 0.1,
         }}
+        showsUserLocation={true}
+        showsMyLocationButton={true}
+        mapType="standard"
       >
         {currentLocation && (
           <Marker
@@ -319,17 +322,12 @@ export default function MapScreen() {
             strokeColor="blue"
           />
         )}
-        {/* <View style={styles.buttonContainer}>
-          <Button title="Back" onPress={() => router.back()} />
-        </View> */}
-
-        {/* Back Button */}
-        <View className="absolute top-2r left-5">
+        <View style={styles.backButtonContainer}>
           <TouchableOpacity
-            className="bg-purple-500 px-4 py-3 top-20 rounded-lg shadow-lg"
+            style={styles.backButton}
             onPress={() => router.back()}
           >
-            <Text className="text-white font-bold">Back</Text>
+            <Text style={styles.backButtonText}>Back</Text>
           </TouchableOpacity>
         </View>
         <TouchableOpacity
@@ -439,7 +437,6 @@ export default function MapScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#fff",
   },
   loadingContainer: {
     flex: 1,
@@ -451,8 +448,19 @@ const styles = StyleSheet.create({
     width: "100%",
     height: "85%",
   },
-  mapTransit: {
-    height: "70%", // when transit is selected
+  backButtonContainer: {
+    position: "absolute",
+    top: 20,
+    left: 10,
+  },
+  backButton: {
+    backgroundColor: "purple",
+    padding: 10,
+    borderRadius: 8,
+  },
+  backButtonText: {
+    color: "#fff",
+    fontWeight: "bold",
   },
   changeLocationButton: {
     position: "absolute",
@@ -465,6 +473,38 @@ const styles = StyleSheet.create({
   changeLocationText: {
     color: "#fff",
     fontWeight: "bold",
+  },
+  infoContainer: {
+    height: "15%",
+    backgroundColor: "#fff",
+    paddingVertical: 10,
+  },
+  scrollContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  card: {
+    backgroundColor: "#fff",
+    marginHorizontal: 5,
+    padding: 15,
+    borderRadius: 10,
+    alignItems: "center",
+  },
+  selectedCard: {
+    backgroundColor: "#009FFF",
+  },
+  modeText: {
+    fontSize: 16,
+    fontWeight: "bold",
+    color: "#333",
+  },
+  durationText: {
+    fontSize: 14,
+    color: "#555",
+  },
+  distanceText: {
+    fontSize: 14,
+    color: "#777",
   },
   overlay: {
     position: "absolute",
@@ -496,38 +536,6 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderColor: "#eee",
   },
-  infoContainer: {
-    height: "10%",
-    backgroundColor: "#fff",
-    paddingVertical: 10,
-  },
-  scrollContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  card: {
-    backgroundColor: "#fff",
-    marginHorizontal: 5,
-    padding: 15,
-    borderRadius: 10,
-    alignItems: "center",
-  },
-  selectedCard: {
-    backgroundColor: "#009FFF",
-  },
-  modeText: {
-    fontSize: 16,
-    fontWeight: "bold",
-    color: "#333",
-  },
-  durationText: {
-    fontSize: 14,
-    color: "#555",
-  },
-  distanceText: {
-    fontSize: 14,
-    color: "#777",
-  },
   stepsContainer: {
     backgroundColor: "#fff",
     padding: 15,
@@ -551,10 +559,5 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: "#444",
     marginTop: 5,
-  },
-  buttonContainer: {
-    position: "absolute",
-    top: 50,
-    left: 10,
   },
 });

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   View,
   Text,
@@ -8,27 +8,27 @@ import {
   TextInput,
   ScrollView,
   TouchableOpacity,
-  Alert,
   Modal,
+  Alert,
+  Animated,
+  PanResponder,
+  NativeScrollEvent,
+  NativeSyntheticEvent,
+  FlatList,
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import Carousel from "react-native-reanimated-carousel";
 import axios from "axios";
-import {
-  ArrowLeft,
-  Send,
-  Plus,
-  MapPin,
-  Menu,
-  UserCircle2Icon,
-} from "lucide-react-native";
+import { ArrowUp, ArrowLeft } from "lucide-react-native";
 import { useAuth } from "@/context/AuthProvider";
 import { supabase } from "@/lib/supabase";
 import LoadingOverlay from "../../components/loadingoverlay";
 import moment from "moment";
 import DateTimePicker from "@react-native-community/datetimepicker";
+import { MapPin, MessageSquare } from "lucide-react-native";
 
-const GOOGLE_MAPS_API_KEY = process.env.EXPO_PUBLIC_API_KEY;
+const GOOGLE_MAPS_API_KEY = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY;
+const SCREEN_HEIGHT = Dimensions.get("window").height;
 
 const randomUUID = () =>
   "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
@@ -62,13 +62,79 @@ export default function PlaceScreen() {
   const [selectedChat, setSelectedChat] = useState<any>(null);
   const [chats, setChats] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [visible, setVisible] = useState(false);
   const [tripModalVisible, setTripModalVisible] = useState(false);
   const [startDate, setStartDate] = useState(new Date());
   const [endDate, setEndDate] = useState(new Date());
   const [showStartPicker, setShowStartPicker] = useState(false);
   const [showEndPicker, setShowEndPicker] = useState(false);
-  const onToggleSnackBar = () => setVisible(!visible);
+
+  // Animation setup
+  const panY = useRef(new Animated.Value(SCREEN_HEIGHT)).current;
+  const buttonScale = useRef(new Animated.Value(1)).current;
+  const scrollOffset = useRef(0);
+
+  const translateY = panY.interpolate({
+    inputRange: [0, SCREEN_HEIGHT],
+    outputRange: [0, SCREEN_HEIGHT],
+    extrapolate: "clamp",
+  });
+
+  const handleScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const currentOffset = event.nativeEvent.contentOffset.y;
+    const diff = currentOffset - scrollOffset.current;
+
+    if (diff < 0) {
+      // Scrolling up
+      Animated.spring(panY, {
+        toValue: 0,
+        useNativeDriver: true,
+      }).start();
+    }
+
+    scrollOffset.current = currentOffset;
+  };
+
+  const panResponder = PanResponder.create({
+    onStartShouldSetPanResponder: () => true,
+    onMoveShouldSetPanResponder: () => true,
+    onPanResponderMove: (_, gestureState) => {
+      const newPosition = Math.max(0, gestureState.dy);
+      panY.setValue(newPosition);
+    },
+    onPanResponderRelease: (_, gestureState) => {
+      if (gestureState.dy > 50) {
+        // User dragged down
+        Animated.spring(panY, {
+          toValue: SCREEN_HEIGHT,
+          useNativeDriver: true,
+        }).start();
+      } else {
+        // User dragged up
+        Animated.spring(panY, {
+          toValue: 0,
+          useNativeDriver: true,
+        }).start();
+      }
+    },
+  });
+
+  // Button animation
+  useEffect(() => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(buttonScale, {
+          toValue: 1.2,
+          duration: 1000,
+          useNativeDriver: true,
+        }),
+        Animated.timing(buttonScale, {
+          toValue: 1,
+          duration: 1000,
+          useNativeDriver: true,
+        }),
+      ]),
+    ).start();
+  }, []);
 
   useEffect(() => {
     const fetchPlaceDetails = async () => {
@@ -117,7 +183,7 @@ export default function PlaceScreen() {
   }, [id]);
 
   async function fetchChats() {
-    setIsModalVisible(true);
+    setIsLoading(true);
     try {
       const { data: userChats, error: userChatsError } = await supabase
         .from("conversationParticipants")
@@ -135,6 +201,7 @@ export default function PlaceScreen() {
       if (chatIds.length === 0) {
         setChats([]);
         setIsLoading(false);
+        setIsModalVisible(true);
         return;
       }
 
@@ -144,55 +211,56 @@ export default function PlaceScreen() {
         .in("id", chatIds)
         .order("lastDate", { ascending: false });
 
-      useEffect(() => {
-        if (chatsData) {
-          Promise.all(
-            chatsData.map(async (chat: any) => {
-              const { data: participants, error: participantsError } =
-                await supabase
-                  .from("conversationParticipants")
-                  .select("userId")
-                  .eq("conversationId", chat.id);
-
-              if (participantsError) {
-                throw new Error(
-                  `Error fetching participants: ${participantsError.message}`,
-                );
-              }
-
-              const participantsNames = await Promise.all(
-                participants.map(async (participant: any) => {
-                  const { data: userData, error: userError } = await supabase
-                    .from("users")
-                    .select("fullName")
-                    .eq("id", participant.userId)
-                    .single();
-
-                  if (userError) {
-                    throw new Error(
-                      `Error fetching user data: ${userError.message}`,
-                    );
-                  }
-
-                  return userData.fullName;
-                }),
-              );
-
-              return { ...chat, participants: participantsNames };
-            }),
-          ).then((data) => {
-            setChats(data);
-          });
-        }
-      }, [chatsData]);
-
       if (chatsError) {
         throw new Error(
           `Failed to fetch chat group details: ${chatsError.message}`,
         );
       }
+
+      // Process chat data to include participant names
+      const processedChats = await Promise.all(
+        chatsData.map(async (chat) => {
+          const { data: participants, error: participantsError } =
+            await supabase
+              .from("conversationParticipants")
+              .select("userId")
+              .eq("conversationId", chat.id);
+
+          if (participantsError) {
+            throw new Error(
+              `Error fetching participants: ${participantsError.message}`,
+            );
+          }
+
+          const participantsNames = await Promise.all(
+            participants.map(async (participant) => {
+              const { data: userData, error: userError } = await supabase
+                .from("users")
+                .select("fullName")
+                .eq("id", participant.userId)
+                .single();
+
+              if (userError) {
+                throw new Error(
+                  `Error fetching user data: ${userError.message}`,
+                );
+              }
+
+              return userData.fullName;
+            }),
+          );
+
+          return { ...chat, participants: participantsNames };
+        }),
+      );
+
+      setChats(processedChats);
+      setIsLoading(false);
+      setIsModalVisible(true);
     } catch (error) {
       console.error("Error fetching chats:", error);
+      setIsLoading(false);
+      Alert.alert("Error", "Failed to load chats. Please try again.");
     }
   }
 
@@ -278,281 +346,330 @@ export default function PlaceScreen() {
   };
 
   return (
-    <View className="flex-1 bg-white">
-      <View className="flex-row justify-between items-center px-6 pt-16 pb-4 bg-blue-400 shadow-md">
-        <TouchableOpacity onPress={() => router.back()}>
-          <ArrowLeft size={32} color="black" />
-        </TouchableOpacity>
-
-        {place ? (
-          <Text className="text-lg font-bold text-white">{place.title}</Text>
-        ) : (
-          <Text className="text-lg font-bold text-gray-800">Loading...</Text>
-        )}
-      </View>
-
+    <View className="flex-1 bg-black">
       {loading ? (
-        <ActivityIndicator
-          size="large"
-          color="blue"
-          className="flex-1 justify-center items-center"
-        />
+        <ActivityIndicator size="large" color="white" className="flex-1" />
       ) : place ? (
-        <ScrollView showsVerticalScrollIndicator={false} className="flex-1">
-          <View className="w-full h-[55vh]">
+        <>
+          <View className="flex-1">
             <Carousel
               loop
-              pagingEnabled
-              snapEnabled
-              width={Dimensions.get("window").width} // Full width dynamically
-              height={Dimensions.get("window").height * 0.55} // 55% of screen height
+              width={Dimensions.get("window").width}
+              height={Dimensions.get("window").height}
               data={place.images}
               renderItem={({ item }) => (
-                <Image
-                  source={{ uri: item }}
-                  className="w-full h-full shadow-lg"
-                  resizeMode="cover" // Ensures image fills the entire space
-                />
+                <View className="flex-1">
+                  <Image
+                    source={{ uri: item }}
+                    className="w-full h-full"
+                    resizeMode="cover"
+                  />
+                  <View className="absolute bottom-32 left-6 right-6">
+                    <Text
+                      className="text-white text-5xl font-bold"
+                      numberOfLines={2}
+                    >
+                      {place.title}
+                    </Text>
+                  </View>
+                </View>
               )}
             />
-          </View>
 
-          <View className="px-5 py-4">
-            <Text className="text-3xl font-bold text-gray-800 mb-2">
-              {place.title}
-            </Text>
-            <Text className="text-lg text-gray-600">{place.description}</Text>
-            <Text className="text-sm text-gray-500 mt-2">
-              {place.types?.join(", ") || "Types"}
-            </Text>
-          </View>
+            <TouchableOpacity
+              className="absolute top-16 left-6"
+              onPress={() => router.back()}
+            >
+              <ArrowLeft size={32} color="white" />
+            </TouchableOpacity>
 
-          <TouchableOpacity
-            className="bg-indigo-400 py-3 mx-5 rounded-xl shadow-lg flex items-center justify-center mt-4"
-            onPress={() => router.push(`/map/${id}`)}
-          >
-            <Text className="text-white font-semibold text-lg">
-              View on Map
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            className="bg-blue-600 py-3 mx-5 rounded-xl shadow-lg flex items-center justify-center mt-6"
-            onPress={() => {
-              fetchChats();
-            }}
-          >
-            <Text className="text-white font-semibold text-lg">
-              Create Trip at this location
-            </Text>
-          </TouchableOpacity>
-
-          <View className="bg-gray-100 rounded-xl px-5 py-4 mx-5 mt-6 shadow-md">
-            <Text className="text-xl font-bold text-gray-800 mb-3">
-              Reviews
-            </Text>
-            {place.reviews && place.reviews.length > 0 ? (
-              <ScrollView
-                className="max-h-[250px]"
-                showsVerticalScrollIndicator={false}
+            <Animated.View
+              className="absolute bottom-20 right-6"
+              style={{
+                transform: [{ scale: buttonScale }],
+              }}
+            >
+              <TouchableOpacity
+                className="bg-white rounded-full p-4 shadow-lg"
+                onPress={() => {
+                  Animated.spring(panY, {
+                    toValue: 0,
+                    useNativeDriver: true,
+                  }).start();
+                }}
               >
-                {place.reviews.map((review, index) => (
+                <ArrowUp size={20} color="black" />
+              </TouchableOpacity>
+            </Animated.View>
+          </View>
+          <Animated.View
+            style={{
+              transform: [{ translateY }],
+              position: "absolute",
+              left: 0,
+              right: 0,
+              bottom: 0,
+              height: SCREEN_HEIGHT * 0.6,
+              backgroundColor: "white",
+              borderTopLeftRadius: 28,
+              borderTopRightRadius: 28,
+              shadowColor: "#000",
+              shadowOffset: { width: 0, height: -3 },
+              shadowOpacity: 0.1,
+              shadowRadius: 10,
+              elevation: 10,
+            }}
+            {...panResponder.panHandlers}
+          >
+            <View className="w-12 h-1.5 bg-gray-300 rounded-full mx-auto mt-4 mb-2" />
+
+            <ScrollView
+              className="flex-1 px-6"
+              showsVerticalScrollIndicator={false}
+              bounces={false}
+            >
+              <Text className="text-xl text-gray-800 font-medium leading-relaxed mb-3 mt-2">
+                {place.description}
+              </Text>
+
+              <View className="flex-row flex-wrap mt-1 mb-5">
+                {place.types?.map((type, index) => (
                   <View
                     key={index}
-                    className="bg-white p-3 rounded-lg mb-3 shadow-sm"
+                    className="bg-blue-50 px-3 py-1.5 rounded-full mr-2 mb-2"
                   >
-                    <Text className="text-sm font-bold text-gray-700">
-                      {review.author_name}
-                    </Text>
-                    <Text className="text-xs text-yellow-600">
-                      ⭐ {review.rating}/5
-                    </Text>
-                    <Text className="text-sm text-gray-600 mt-2">
-                      {review.text}
+                    <Text className="text-blue-600 text-xs font-medium">
+                      {type}
                     </Text>
                   </View>
                 ))}
-              </ScrollView>
-            ) : (
-              <Text className="text-center text-gray-500 text-sm">
-                No reviews yet
-              </Text>
-            )}
-          </View>
-        </ScrollView>
+              </View>
+
+              <View className="flex-row space-x-3 mb-6">
+                <TouchableOpacity
+                  className="flex-1 bg-indigo-600 py-4 rounded-2xl shadow-md flex-row items-center justify-center"
+                  style={{ elevation: 3 }}
+                  onPress={() => router.push(`/map/${id}`)}
+                  activeOpacity={0.8}
+                >
+                  <MapPin size={18} color="white" />
+                  <Text className="text-white font-bold text-base ml-2">
+                    View on Map
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  className="flex-1 bg-blue-500 py-4 rounded-2xl shadow-md flex-row items-center justify-center"
+                  style={{ elevation: 3 }}
+                  onPress={() => fetchChats()}
+                  activeOpacity={0.8}
+                >
+                  <MessageSquare size={18} color="white" />
+                  <Text className="text-white font-bold text-base ml-2">
+                    Create Trip
+                  </Text>
+                </TouchableOpacity>
+              </View>
+
+              <View className="flex-row items-center justify-between mb-4">
+                <Text className="text-xl font-bold text-gray-800">Reviews</Text>
+                <View className="flex-row items-center bg-yellow-100 px-3 py-1 rounded-full">
+                  <Text className="text-yellow-700 font-bold mr-1">
+                    {place.reviews?.length > 0
+                      ? (
+                          place.reviews.reduce(
+                            (acc, review) => acc + review.rating,
+                            0,
+                          ) / place.reviews.length
+                        ).toFixed(1)
+                      : "N/A"}
+                  </Text>
+                  <Text className="text-yellow-600">★</Text>
+                </View>
+              </View>
+
+              {place.reviews && place.reviews.length > 0 ? (
+                <View className="max-h-[250px]">
+                  {place.reviews.map((review, index) => (
+                    <View
+                      key={index}
+                      className="bg-white p-4 rounded-xl mb-3 shadow-sm"
+                      style={{ elevation: 1 }}
+                    >
+                      <View className="flex-row justify-between items-center mb-2">
+                        <Text className="text-base font-bold text-gray-800">
+                          {review.author_name}
+                        </Text>
+                        <View className="flex-row items-center bg-yellow-50 px-2 py-1 rounded-lg">
+                          <Text className="text-yellow-600 font-bold">
+                            {review.rating}
+                          </Text>
+                          <Text className="text-yellow-500 ml-1">★</Text>
+                        </View>
+                      </View>
+                      <Text className="text-gray-700 leading-relaxed">
+                        {review.text}
+                      </Text>
+                    </View>
+                  ))}
+                </View>
+              ) : (
+                <View className="bg-white p-6 rounded-xl items-center">
+                  <Text className="text-gray-500 text-center">
+                    No reviews available for this location yet
+                  </Text>
+                </View>
+              )}
+            </ScrollView>
+          </Animated.View>
+
+          {/* Modal for selecting chat and creating trip */}
+          <Modal
+            visible={isModalVisible}
+            animationType="slide"
+            transparent={true}
+            onRequestClose={() => setIsModalVisible(false)}
+          >
+            <View className="flex-1 justify-center items-center bg-black/50">
+              <View className="bg-white w-[90%] rounded-xl p-5 max-h-[80%]">
+                <Text className="text-xl font-bold text-center mb-4">
+                  Create Trip at {place?.title}
+                </Text>
+
+                {isLoading ? (
+                  <ActivityIndicator size="large" color="#0000ff" />
+                ) : chats.length > 0 ? (
+                  <>
+                    <Text className="text-gray-700 mb-2">Select a chat:</Text>
+                    <FlatList
+                      data={chats}
+                      keyExtractor={(item) => item.id}
+                      className="max-h-[200px] mb-4"
+                      renderItem={({ item }) => (
+                        <TouchableOpacity
+                          className={`p-3 mb-2 rounded-lg border ${
+                            selectedChat?.id === item.id
+                              ? "border-blue-500 bg-blue-50"
+                              : "border-gray-300"
+                          }`}
+                          onPress={() => setSelectedChat(item)}
+                        >
+                          <Text className="font-semibold text-lg text-black">
+                            {item.chatName}
+                          </Text>
+                          <Text className="text-xs text-gray-500">
+                            {item.participants?.join(", ")}
+                          </Text>
+                        </TouchableOpacity>
+                      )}
+                    />
+
+                    {selectedChat && (
+                      <>
+                        <Text className="text-gray-700 mb-2">Trip Name:</Text>
+                        <TextInput
+                          className="border border-gray-300 p-2 rounded-lg mb-4"
+                          value={newTripName}
+                          onChangeText={setNewTripName}
+                          placeholder="Enter trip name"
+                        />
+
+                        <View className="flex-row justify-between mb-4">
+                          <View className="flex-1 mr-2">
+                            <Text className="text-gray-700 mb-2">
+                              Start Date:
+                            </Text>
+                            <TouchableOpacity
+                              className="border border-gray-300 p-2 rounded-lg"
+                              onPress={() => setShowStartPicker(true)}
+                            >
+                              <Text>
+                                {moment(startDate).format("MMM DD, YYYY")}
+                              </Text>
+                            </TouchableOpacity>
+                            {showStartPicker && (
+                              <DateTimePicker
+                                value={startDate}
+                                mode="date"
+                                display="default"
+                                onChange={(e, date) =>
+                                  handleDateChange(e, date, true)
+                                }
+                              />
+                            )}
+                          </View>
+
+                          <View className="flex-1 ml-2">
+                            <Text className="text-gray-700 mb-2">
+                              End Date:
+                            </Text>
+                            <TouchableOpacity
+                              className="border border-gray-300 p-2 rounded-lg"
+                              onPress={() => setShowEndPicker(true)}
+                            >
+                              <Text>
+                                {moment(endDate).format("MMM DD, YYYY")}
+                              </Text>
+                            </TouchableOpacity>
+                            {showEndPicker && (
+                              <DateTimePicker
+                                value={endDate}
+                                mode="date"
+                                display="default"
+                                onChange={(e, date) =>
+                                  handleDateChange(e, date, false)
+                                }
+                              />
+                            )}
+                          </View>
+                        </View>
+                      </>
+                    )}
+
+                    <View className="flex-row justify-end mt-4">
+                      <TouchableOpacity
+                        className="bg-gray-300 py-2 px-4 rounded-lg mr-2"
+                        onPress={() => setIsModalVisible(false)}
+                      >
+                        <Text>Cancel</Text>
+                      </TouchableOpacity>
+
+                      <TouchableOpacity
+                        className={`py-2 px-4 rounded-lg ${
+                          selectedChat && newTripName.trim()
+                            ? "bg-blue-500"
+                            : "bg-gray-400"
+                        }`}
+                        onPress={handleCreateTrip}
+                        disabled={!selectedChat || !newTripName.trim()}
+                      >
+                        <Text className="text-white">Create Trip</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </>
+                ) : (
+                  <View className="items-center py-4">
+                    <Text className="text-gray-700 text-center mb-4">
+                      You don't have any chats yet. Create a chat first to plan
+                      a trip.
+                    </Text>
+                    <TouchableOpacity
+                      className="bg-gray-300 py-2 px-4 rounded-lg"
+                      onPress={() => setIsModalVisible(false)}
+                    >
+                      <Text>Close</Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
+              </View>
+            </View>
+          </Modal>
+        </>
       ) : (
         <Text className="text-lg text-red-500 text-center mt-10">
           Place not found
         </Text>
       )}
-
-      <Modal
-        visible={isModalVisible}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setIsModalVisible(false)}
-      >
-        <View className="flex-1 justify-center items-center bg-black/50 backdrop-blur-md">
-          <View className="bg-white w-[85%] rounded-2xl p-6 shadow-xl">
-            <Text className="text-2xl font-bold text-gray-800 mb-4 text-center">
-              Select a Chat for the Trip
-            </Text>
-
-            {/* List of Chats */}
-            <ScrollView
-              className="max-h-[500px] space-y-4" // Set a fixed height and space between each chat box
-              contentContainerStyle={{ paddingBottom: 20 }}
-            >
-              {chats.map((chat) => (
-                <TouchableOpacity
-                  key={chat.id}
-                  className="bg-gray-100 p-3 rounded-lg mb-2 shadow-sm"
-                  onPress={() => {
-                    // handleCreateTrip(chat);
-                    setSelectedChat(chat);
-                    setIsModalVisible(false);
-                    setTripModalVisible(true);
-                  }}
-                >
-                  <Text className="text-lg font-bold text-red-800">
-                    {chat.chatName}
-                  </Text>
-                  {/* List Participants */}
-                  <Text className="text-sm text-gray-600">
-                    Participants: {chat.participants.join(", ")}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-
-            <TouchableOpacity
-              className="mt-5 bg-gray-300 py-3 w-full rounded-xl"
-              onPress={() => {
-                setIsModalVisible(false);
-              }}
-            >
-              <Text className="text-gray-800 font-bold text-center text-lg">
-                Cancel
-              </Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
-
-      <Modal visible={tripModalVisible} transparent animationType="slide">
-        <View className="flex-1 justify-center items-center bg-black/50 backdrop-blur-md">
-          <View className="bg-white w-[85%] rounded-2xl p-6 shadow-xl">
-            <Text className="text-2xl font-bold text-gray-900 mb-4 text-center">
-              Create a New Trip
-            </Text>
-
-            {/* Trip Name Input */}
-            <Text className="text-lg font-semibold mb-2">Trip Name</Text>
-            <TextInput
-              className="w-full p-4 bg-gray-100 rounded-xl text-lg border border-gray-300 mb-4"
-              placeholder="Enter Trip Name"
-              value={newTripName}
-              onChangeText={setNewTripName}
-            />
-
-            {/* 📌 Start Date Picker */}
-            <Text className="text-lg font-semibold mb-2">
-              Start Date & Time
-            </Text>
-            <TouchableOpacity
-              className="p-4 bg-gray-100 rounded-xl border border-gray-300 mb-4"
-              onPress={() => setShowStartPicker(true)}
-            >
-              <Text className="text-gray-700 text-lg">
-                {moment(startDate).format("MMMM DD, YYYY - hh:mm A")}
-              </Text>
-            </TouchableOpacity>
-            {showStartPicker && (
-              <DateTimePicker
-                value={startDate}
-                mode="datetime" // ✅ Shows both date & time
-                display="default"
-                onChange={(event, selectedDate) =>
-                  handleDateChange(event, selectedDate, true)
-                }
-              />
-            )}
-
-            {/* 📌 End Date Picker */}
-            <Text className="text-lg font-semibold mb-2">End Date & Time</Text>
-            <TouchableOpacity
-              className="p-4 bg-gray-100 rounded-xl border border-gray-300 mb-4"
-              onPress={() => setShowEndPicker(true)}
-            >
-              <Text className="text-gray-700 text-lg">
-                {moment(endDate).format("MMMM DD, YYYY - hh:mm A")}
-              </Text>
-            </TouchableOpacity>
-            {showEndPicker && (
-              <DateTimePicker
-                value={endDate}
-                mode="datetime" // ✅ Shows both date & time
-                display="default"
-                onChange={(event, selectedDate) =>
-                  handleDateChange(event, selectedDate, false)
-                }
-              />
-            )}
-
-            {/* Create & Cancel Buttons */}
-            <View className="flex-row justify-between mt-6">
-              <TouchableOpacity
-                className="bg-orange-500 py-3 w-[48%] rounded-xl shadow-lg"
-                onPress={handleCreateTrip}
-              >
-                <Text className="text-white font-bold text-center text-lg">
-                  Create
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                className="bg-gray-300 py-3 w-[48%] rounded-xl"
-                onPress={() => {
-                  setTripModalVisible(false);
-                  setNewTripName("");
-                }}
-              >
-                <Text className="text-gray-800 font-bold text-center text-lg">
-                  Cancel
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
-
-      <LoadingOverlay
-        visible={isLoading}
-        type="dots"
-        message="Creating Trip..."
-      />
-      {/* 
-      <Snackbar
-        visible={visible}
-        onDismiss={onToggleSnackBar}
-        duration={Snackbar.DURATION_SHORT} // Snackbar duration
-        action={{
-          label: 'Undo',
-          onPress: () => {
-            // Handle undo action
-            console.log('Undo action');
-            setVisible(false);
-          },
-        }}
-        style={{
-          backgroundColor: '#4CAF50', // Customize the background color
-          borderRadius: 10, // Rounded corners
-          padding: 10, // Add padding
-        }}
-      >
-        <Text style={{ color: 'white', fontWeight: 'bold' }}>
-          Trip created successfully!
-        </Text>
-      </Snackbar> */}
     </View>
   );
 }

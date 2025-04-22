@@ -1,12 +1,12 @@
 import { useState, useEffect } from "react";
 import { supabase } from "../lib/supabase";
 import { View, Text, TouchableOpacity, ActivityIndicator } from "react-native";
-import { ArrowLeft } from "lucide-react-native";
+import { ArrowLeft, Mail, User, MapPin } from "lucide-react-native";
 import { Session } from "@supabase/supabase-js";
 import { useAuth } from "../context/AuthProvider";
 import * as Location from "expo-location";
 import { useRouter } from "expo-router";
-
+import { ScrollView } from "react-native";
 export default function Account({ session }: { session: Session }) {
   const [loading, setLoading] = useState(true);
   const [email, setEmail] = useState("");
@@ -66,52 +66,90 @@ export default function Account({ session }: { session: Session }) {
   }
 
   return (
-    <View className="flex-1 bg-white px-5 py-20">
-      {/* Back Button */}
-      <TouchableOpacity onPress={() => router.back()} className="p-3 top-30">
-        <ArrowLeft size={32} color="black" />
-      </TouchableOpacity>
-
-      <Text className="text-2xl font-bold text-gray-900 text-center mb-6">
-        My Profile
-      </Text>
-
-      {/* 📌 Email */}
-      <View className="bg-gray-100 rounded-lg p-4 mb-4 border border-gray-300">
-        <Text className="text-gray-700 font-semibold">Email</Text>
-        <Text className="text-lg text-gray-800">
-          {email || "Not available"}
+    <View className="flex-1 bg-gradient-to-b from-white to-blue-50">
+      {/* Header with Back Button */}
+      <View className="px-5 pt-16 pb-6 flex-row items-center">
+        <TouchableOpacity
+          onPress={() => router.back()}
+          className="p-2 bg-white rounded-full shadow-sm active:bg-gray-100"
+        >
+          <ArrowLeft size={24} color="#3b82f6" />
+        </TouchableOpacity>
+        <Text className="text-2xl font-bold text-gray-900 ml-4">
+          My Profile
         </Text>
       </View>
 
-      {/* 📌 Full Name */}
-      <View className="bg-gray-100 rounded-lg p-4 mb-4 border border-gray-300">
-        <Text className="text-gray-700 font-semibold">Full Name</Text>
-        <Text className="text-lg text-gray-800">
-          {loading ? (
-            <ActivityIndicator size="small" color="#ED8F03" />
-          ) : (
-            fullName
-          )}
-        </Text>
-      </View>
+      {/* Profile Content */}
+      <ScrollView
+        className="px-5"
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: 40 }}
+      >
+        {/* Profile Card */}
+        <View className="bg-white rounded-3xl shadow-md p-6 mb-6 border border-gray-100">
+          {/* Email */}
+          <View className="mb-5">
+            <View className="flex-row items-center mb-2">
+              <Mail size={18} color="#3b82f6" />
+              <Text className="text-gray-600 font-medium ml-2">Email</Text>
+            </View>
+            <Text className="text-lg text-gray-800 font-semibold pl-7">
+              {email || "Not available"}
+            </Text>
+          </View>
 
-      {/* 📌 Location */}
-      <View className="bg-gray-100 rounded-lg p-4 mb-4 border border-gray-300">
-        <Text className="text-gray-700 font-semibold">Location</Text>
-        <Text className="text-lg text-gray-800">
-          {loading ? (
-            <ActivityIndicator size="small" color="#ED8F03" />
-          ) : (
-            formattedLocation
-          )}
-        </Text>
-      </View>
+          {/* Full Name */}
+          <View className="mb-5">
+            <View className="flex-row items-center mb-2">
+              <User size={18} color="#3b82f6" />
+              <Text className="text-gray-600 font-medium ml-2">Full Name</Text>
+            </View>
+            <View className="pl-7">
+              {loading ? (
+                <ActivityIndicator size="small" color="#3b82f6" />
+              ) : (
+                <Text className="text-lg text-gray-800 font-semibold">
+                  {fullName}
+                </Text>
+              )}
+            </View>
+          </View>
 
-      {/* 📌 Error Message (If Any) */}
-      {errorMsg ? (
-        <Text className="text-red-500 text-center mt-4">{errorMsg}</Text>
-      ) : null}
+          {/* Location */}
+          <View>
+            <View className="flex-row items-center mb-2">
+              <MapPin size={18} color="#3b82f6" />
+              <Text className="text-gray-600 font-medium ml-2">Location</Text>
+            </View>
+            <View className="pl-7">
+              {loading ? (
+                <ActivityIndicator size="small" color="#3b82f6" />
+              ) : (
+                <Text className="text-lg text-gray-800 font-semibold">
+                  {formattedLocation}
+                </Text>
+              )}
+            </View>
+          </View>
+        </View>
+
+        {/* Action Buttons */}
+        {/* <TouchableOpacity className="bg-blue-500 py-4 rounded-xl shadow-sm mb-4 active:bg-blue-600">
+          <Text className="text-white font-bold text-center">Edit Profile</Text>
+        </TouchableOpacity> */}
+
+        {/* <TouchableOpacity className="bg-white py-4 rounded-xl shadow-sm border border-gray-200 active:bg-gray-50">
+          <Text className="text-blue-500 font-bold text-center">Sign Out</Text>
+        </TouchableOpacity> */}
+
+        {/* Error Message (If Any) */}
+        {errorMsg ? (
+          <View className="bg-red-50 p-4 rounded-xl mt-6 border border-red-100">
+            <Text className="text-red-500 text-center">{errorMsg}</Text>
+          </View>
+        ) : null}
+      </ScrollView>
     </View>
   );
 }

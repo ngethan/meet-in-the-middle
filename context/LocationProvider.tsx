@@ -16,7 +16,7 @@ const LocationContext = createContext<{
   setTypes: () => {},
 });
 
-const GOOGLE_MAPS_API_KEY = process.env.EXPO_PUBLIC_API_KEY;
+const GOOGLE_MAPS_API_KEY = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY;
 const RADIUS = 50000;
 
 export const LocationProvider: React.FC<{ children: ReactNode }> = ({
@@ -58,13 +58,15 @@ export const LocationProvider: React.FC<{ children: ReactNode }> = ({
           },
         );
 
-        let results = response.data.results.map((place) => ({
+        let results = response.data.results.map((place: any) => ({
           types: place.types,
         }));
 
-        const uniqueTypes = [...new Set(results.flatMap((dest) => dest.types))];
+        const uniqueTypes = [
+          ...new Set(results.flatMap((dest: any) => dest.types)),
+        ];
 
-        setLocationTypes(uniqueTypes);
+        setLocationTypes(uniqueTypes as string[]);
       } catch (error) {
         console.error("Error fetching locations:", error);
       }
