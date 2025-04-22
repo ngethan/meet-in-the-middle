@@ -377,10 +377,10 @@ export default function PlaceScreen() {
             />
 
             <TouchableOpacity
-              className="absolute top-16 left-6"
               onPress={() => router.back()}
+              className="absolute top-16 left-6 p-2 bg-gray-100 rounded-full shadow-sm active:bg-gray-200"
             >
-              <ArrowLeft size={32} color="white" />
+              <ArrowLeft size={24} color="#333" />
             </TouchableOpacity>
 
             <Animated.View
@@ -427,99 +427,105 @@ export default function PlaceScreen() {
               className="flex-1 px-6"
               showsVerticalScrollIndicator={false}
               bounces={false}
+              onScroll={handleScroll}
+              scrollEventThrottle={16}
             >
-              <Text className="text-xl text-gray-800 font-medium leading-relaxed mb-3 mt-2">
-                {place.description}
-              </Text>
+              <View className="pb-6">
+                <Text className="text-xl text-gray-800 font-medium leading-relaxed mb-3 mt-2">
+                  {place.description}
+                </Text>
 
-              <View className="flex-row flex-wrap mt-1 mb-5">
-                {place.types?.map((type, index) => (
-                  <View
-                    key={index}
-                    className="bg-blue-50 px-3 py-1.5 rounded-full mr-2 mb-2"
-                  >
-                    <Text className="text-blue-600 text-xs font-medium">
-                      {type}
-                    </Text>
-                  </View>
-                ))}
-              </View>
-
-              <View className="flex-row space-x-3 mb-6">
-                <TouchableOpacity
-                  className="flex-1 bg-indigo-600 py-4 rounded-2xl shadow-md flex-row items-center justify-center"
-                  style={{ elevation: 3 }}
-                  onPress={() => router.push(`/map/${id}`)}
-                  activeOpacity={0.8}
-                >
-                  <MapPin size={18} color="white" />
-                  <Text className="text-white font-bold text-base ml-2">
-                    View on Map
-                  </Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  className="flex-1 bg-blue-500 py-4 rounded-2xl shadow-md flex-row items-center justify-center"
-                  style={{ elevation: 3 }}
-                  onPress={() => fetchChats()}
-                  activeOpacity={0.8}
-                >
-                  <MessageSquare size={18} color="white" />
-                  <Text className="text-white font-bold text-base ml-2">
-                    Create Trip
-                  </Text>
-                </TouchableOpacity>
-              </View>
-
-              <View className="flex-row items-center justify-between mb-4">
-                <Text className="text-xl font-bold text-gray-800">Reviews</Text>
-                <View className="flex-row items-center bg-yellow-100 px-3 py-1 rounded-full">
-                  <Text className="text-yellow-700 font-bold mr-1">
-                    {place.reviews?.length > 0
-                      ? (
-                          place.reviews.reduce(
-                            (acc, review) => acc + review.rating,
-                            0,
-                          ) / place.reviews.length
-                        ).toFixed(1)
-                      : "N/A"}
-                  </Text>
-                  <Text className="text-yellow-600">★</Text>
-                </View>
-              </View>
-
-              {place.reviews && place.reviews.length > 0 ? (
-                <View className="max-h-[250px]">
-                  {place.reviews.map((review, index) => (
+                <View className="flex-row flex-wrap mt-1 mb-5">
+                  {place.types?.map((type, index) => (
                     <View
                       key={index}
-                      className="bg-white p-4 rounded-xl mb-3 shadow-sm"
-                      style={{ elevation: 1 }}
+                      className="bg-blue-50 px-3 py-1.5 rounded-full mr-2 mb-2"
                     >
-                      <View className="flex-row justify-between items-center mb-2">
-                        <Text className="text-base font-bold text-gray-800">
-                          {review.author_name}
-                        </Text>
-                        <View className="flex-row items-center bg-yellow-50 px-2 py-1 rounded-lg">
-                          <Text className="text-yellow-600 font-bold">
-                            {review.rating}
-                          </Text>
-                          <Text className="text-yellow-500 ml-1">★</Text>
-                        </View>
-                      </View>
-                      <Text className="text-gray-700 leading-relaxed">
-                        {review.text}
+                      <Text className="text-blue-600 text-xs font-medium">
+                        {type}
                       </Text>
                     </View>
                   ))}
                 </View>
-              ) : (
-                <View className="bg-white p-6 rounded-xl items-center">
-                  <Text className="text-gray-500 text-center">
-                    No reviews available for this location yet
-                  </Text>
+
+                <View className="flex-row space-x-3 mb-8">
+                  <TouchableOpacity
+                    className="flex-1 bg-indigo-600 py-4 rounded-2xl shadow-md flex-row items-center justify-center mr-3"
+                    style={{ elevation: 3 }}
+                    onPress={() => router.push(`/map/${id}`)}
+                    activeOpacity={0.8}
+                  >
+                    <MapPin size={18} color="white" />
+                    <Text className="text-white font-bold text-base ml-2">
+                      View on Map
+                    </Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    className="flex-1 bg-blue-500 py-4 rounded-2xl shadow-md flex-row items-center justify-center ml-3"
+                    style={{ elevation: 3 }}
+                    onPress={() => fetchChats()}
+                    activeOpacity={0.8}
+                  >
+                    <MessageSquare size={18} color="white" />
+                    <Text className="text-white font-bold text-base ml-2">
+                      Create Trip
+                    </Text>
+                  </TouchableOpacity>
                 </View>
-              )}
+
+                <View className="flex-row items-center justify-between mb-4">
+                  <Text className="text-xl font-bold text-gray-800">
+                    Reviews
+                  </Text>
+                  <View className="flex-row items-center bg-yellow-100 px-3 py-1 rounded-full">
+                    <Text className="text-yellow-700 font-bold mr-1">
+                      {place.reviews?.length > 0
+                        ? (
+                            place.reviews.reduce(
+                              (acc, review) => acc + review.rating,
+                              0,
+                            ) / place.reviews.length
+                          ).toFixed(1)
+                        : "N/A"}
+                    </Text>
+                    <Text className="text-yellow-600">★</Text>
+                  </View>
+                </View>
+
+                {place.reviews && place.reviews.length > 0 ? (
+                  <View className="space-y-3">
+                    {place.reviews.map((review, index) => (
+                      <View
+                        key={index}
+                        className="bg-white p-4 rounded-xl shadow-sm"
+                        style={{ elevation: 1 }}
+                      >
+                        <View className="flex-row justify-between items-center mb-2">
+                          <Text className="text-base font-bold text-gray-800">
+                            {review.author_name}
+                          </Text>
+                          <View className="flex-row items-center bg-yellow-50 px-2 py-1 rounded-lg">
+                            <Text className="text-yellow-600 font-bold">
+                              {review.rating}
+                            </Text>
+                            <Text className="text-yellow-500 ml-1">★</Text>
+                          </View>
+                        </View>
+                        <Text className="text-gray-700 leading-relaxed">
+                          {review.text}
+                        </Text>
+                      </View>
+                    ))}
+                  </View>
+                ) : (
+                  <View className="bg-white p-6 rounded-xl items-center">
+                    <Text className="text-gray-500 text-center">
+                      No reviews available for this location yet
+                    </Text>
+                  </View>
+                )}
+              </View>
             </ScrollView>
           </Animated.View>
 

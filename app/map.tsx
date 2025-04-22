@@ -1,6 +1,6 @@
 import { useLocalSearchParams } from "expo-router";
 import React, { useEffect, useState } from "react";
-import MapView, { Polyline, Marker } from "react-native-maps";
+import { Platform } from "react-native";
 import {
   View,
   Text,
@@ -16,16 +16,39 @@ const GOOGLE_MAPS_API_KEY = process.env.EXPO_PUBLIC_API_KEY;
 const travelModes = ["driving", "walking", "bicycling", "transit"];
 const polyline = require("@mapbox/polyline");
 
+interface Participant {
+  latitude: number;
+  longitude: number;
+  full_name: string;
+}
+
+interface RouteCoordinate {
+  latitude: number;
+  longitude: number;
+}
+
+const MapComponent = Platform.select({
+  web: () => require("react-native-web-maps").default,
+  default: () => require("react-native-maps").default,
+})();
+
+const { Marker, Polyline } = Platform.select({
+  web: () => require("react-native-web-maps"),
+  default: () => require("react-native-maps"),
+})();
+
 export default function MapScreen() {
   const { bestLatitude, bestLongitude, participants } = useLocalSearchParams();
-  const [routes, setRoutes] = useState([]);
+  const [routes, setRoutes] = useState<RouteCoordinate[][]>([]);
   const [selectedMode, setSelectedMode] = useState("driving");
-  const [travelTimes, setTravelTimes] = useState([]);
+  const [travelTimes, setTravelTimes] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchText, setSearchText] = useState("");
-  const [searchResults, setSearchResults] = useState([]);
+  const [searchResults, setSearchResults] = useState<any[]>([]);
   const [isOverlayVisible, setOverlayVisible] = useState(false);
-  const [parsedParticipants, setParsedParticipants] = useState([]);
+  const [parsedParticipants, setParsedParticipants] = useState<Participant[]>(
+    [],
+  );
   const router = useRouter();
 
   // ✅ Ensure participants is a string before parsing
@@ -61,15 +84,15 @@ export default function MapScreen() {
   }, [bestLatitude, bestLongitude, parsedParticipants]);
 
   // Fetch multiple routes (each participant to best location)
-  async function fetchRoutes(participants) {
-    let fetchedRoutes = [];
+  async function fetchRoutes(participants: Participant[]): Promise<void> {
+    let fetchedRoutes: RouteCoordinate[][] = [];
     for (const participant of participants) {
       if (participant.latitude && participant.longitude) {
         const route = await fetchRoute(
           participant.latitude,
           participant.longitude,
-          bestLatitude,
-          bestLongitude,
+          Number(bestLatitude),
+          Number(bestLongitude),
           "driving",
         );
         if (route.length > 0) {
@@ -81,8 +104,14 @@ export default function MapScreen() {
     setLoading(false);
   }
 
-  // Fetch a single route (from participant to best locateeion)
-  async function fetchRoute(startLat, startLng, endLat, endLng, mode) {
+  // Fetch a single route (from participant to best location)
+  async function fetchRoute(
+    startLat: number,
+    startLng: number,
+    endLat: number,
+    endLng: number,
+    mode: string,
+  ): Promise<RouteCoordinate[]> {
     try {
       const response = await axios.get(
         `https://maps.googleapis.com/maps/api/directions/json`,
@@ -107,9 +136,12 @@ export default function MapScreen() {
   }
 
   // Decode Polyline to Coordinates
-  function decodePolyline(encoded) {
+  function decodePolyline(encoded: string): RouteCoordinate[] {
     let points = polyline.decode(encoded);
-    return points.map(([lat, lng]) => ({ latitude: lat, longitude: lng }));
+    return points.map(([lat, lng]: [number, number]) => ({
+      latitude: lat,
+      longitude: lng,
+    }));
   }
 
   if (loading) {
@@ -124,18 +156,21 @@ export default function MapScreen() {
   return (
     <View className="flex-1 bg-white">
       {/* Map View */}
-      <MapView
+      <MapComponent
         style={{ width: "100%", height: "100%" }}
         initialRegion={{
-          latitude: bestLatitude,
-          longitude: bestLongitude,
+          latitude: Number(bestLatitude),
+          longitude: Number(bestLongitude),
           latitudeDelta: 0.1,
           longitudeDelta: 0.1,
         }}
       >
         {/* Best Location Marker */}
         <Marker
-          coordinate={{ latitude: bestLatitude, longitude: bestLongitude }}
+          coordinate={{
+            latitude: Number(bestLatitude),
+            longitude: Number(bestLongitude),
+          }}
           title="Best Location"
           pinColor="red"
         />
@@ -162,7 +197,7 @@ export default function MapScreen() {
             strokeColor="blue"
           />
         ))}
-      </MapView>
+      </MapComponent>
 
       {/* Back Button */}
       <View className="absolute top-2r left-5">

@@ -11,7 +11,7 @@ import {
   TextInput,
   Modal,
 } from "react-native";
-import MapView, { Marker, Polyline } from "react-native-maps";
+import MapView, { Polyline } from "react-native-maps";
 import { useLocalSearchParams, router } from "expo-router";
 import axios from "axios";
 import * as Location from "expo-location";
@@ -19,9 +19,20 @@ import {
   GestureHandlerRootView,
   PanGestureHandler,
 } from "react-native-gesture-handler";
+import {
+  ArrowLeft,
+  MapPin,
+  Car,
+  User,
+  Bike,
+  Bus,
+  Clock,
+  Search,
+  X,
+} from "lucide-react-native";
+import { Marker } from "react-native-maps";
 
 const GOOGLE_MAPS_API_KEY = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY;
-console.log(GOOGLE_MAPS_API_KEY);
 const polyline = require("@mapbox/polyline");
 
 export default function MapScreen() {
@@ -284,17 +295,18 @@ export default function MapScreen() {
   // While loading the map
   if (loading) {
     return (
-      <View style={styles.loadingContainer}>
+      <View className="flex-1 items-center justify-center">
         <ActivityIndicator size="large" color="#ED8F03" />
         <Text>Loading Map...</Text>
       </View>
     );
   }
-
   return (
-    <GestureHandlerRootView style={styles.container}>
+    <GestureHandlerRootView className="flex-1">
       <MapView
-        style={styles.map}
+        provider="google"
+        googleMapId={GOOGLE_MAPS_API_KEY}
+        className="w-full h-[85%]"
         initialRegion={{
           latitude: currentLocation?.latitude || 38.627,
           longitude: currentLocation?.longitude || -90.1994,
@@ -319,39 +331,46 @@ export default function MapScreen() {
           <Polyline
             coordinates={routeCoords}
             strokeWidth={4}
-            strokeColor="blue"
+            strokeColor="#3b82f6"
           />
         )}
-        <View style={styles.backButtonContainer}>
-          <TouchableOpacity
-            style={styles.backButton}
-            onPress={() => router.back()}
-          >
-            <Text style={styles.backButtonText}>Back</Text>
-          </TouchableOpacity>
-        </View>
-        <TouchableOpacity
-          style={styles.changeLocationButton}
-          onPress={() => setOverlayVisible(true)}
-        >
-          <Text style={styles.changeLocationText}>Change Your Location</Text>
-        </TouchableOpacity>
       </MapView>
 
+      {/* Back Button */}
+      <View className="absolute top-12 left-4 z-10">
+        <TouchableOpacity
+          onPress={() => router.back()}
+          className="p-3 bg-white rounded-full shadow-md active:bg-gray-100"
+        >
+          <ArrowLeft size={24} color="#3b82f6" />
+        </TouchableOpacity>
+      </View>
+
+      {/* Change Location Button */}
+      <TouchableOpacity
+        onPress={() => setOverlayVisible(true)}
+        className="absolute bottom-32 right-4 bg-white px-4 py-3 rounded-full shadow-lg active:bg-gray-50 z-10 flex-row items-center"
+      >
+        <MapPin size={18} color="#3b82f6" />
+        <Text className="text-gray-800 font-medium ml-2">Change Location</Text>
+      </TouchableOpacity>
+
       {/* Bottom Info Bar */}
-      <View style={styles.infoContainer}>
+      <View className="absolute bottom-0 w-full bg-white rounded-t-3xl shadow-lg pt-4 pb-6 px-2">
+        <View className="w-12 h-1 bg-gray-300 rounded-full mx-auto mb-4" />
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.scrollContainer}
+          className="px-2"
         >
           {travelTimes.map((item, index) => (
             <TouchableOpacity
               key={index}
-              style={[
-                styles.card,
-                selectedMode === item.mode ? styles.selectedCard : null,
-              ]}
+              className={`mx-2 p-4 rounded-xl shadow-sm ${
+                selectedMode === item.mode
+                  ? "bg-blue-500"
+                  : "bg-white border border-gray-100"
+              }`}
               onPress={() =>
                 fetchRoute(
                   currentLocation?.latitude || 0,
@@ -362,9 +381,53 @@ export default function MapScreen() {
                 )
               }
             >
-              <Text style={styles.modeText}>{item.mode.toUpperCase()}</Text>
-              <Text style={styles.durationText}>{item.duration}</Text>
-              <Text style={styles.distanceText}>{item.distance}</Text>
+              <View className="flex-row items-center justify-center mb-2">
+                {item.mode === "driving" && (
+                  <Car
+                    size={20}
+                    color={selectedMode === item.mode ? "#fff" : "#3b82f6"}
+                  />
+                )}
+                {item.mode === "walking" && (
+                  <User
+                    size={20}
+                    color={selectedMode === item.mode ? "#fff" : "#3b82f6"}
+                  />
+                )}
+                {item.mode === "bicycling" && (
+                  <Bike
+                    size={20}
+                    color={selectedMode === item.mode ? "#fff" : "#3b82f6"}
+                  />
+                )}
+                {item.mode === "transit" && (
+                  <Bus
+                    size={20}
+                    color={selectedMode === item.mode ? "#fff" : "#3b82f6"}
+                  />
+                )}
+                <Text
+                  className={`ml-2 font-bold ${
+                    selectedMode === item.mode ? "text-white" : "text-gray-800"
+                  }`}
+                >
+                  {item.mode.toUpperCase()}
+                </Text>
+              </View>
+              <Text
+                className={`text-center text-base font-semibold ${
+                  selectedMode === item.mode ? "text-white" : "text-gray-700"
+                }`}
+              >
+                {item.duration}
+              </Text>
+              <Text
+                className={`text-center text-xs ${
+                  selectedMode === item.mode ? "text-white/80" : "text-gray-500"
+                }`}
+              >
+                {item.distance}
+              </Text>
             </TouchableOpacity>
           ))}
         </ScrollView>
@@ -377,28 +440,61 @@ export default function MapScreen() {
             if (e.nativeEvent.translationY > 100) setOverlayVisible(false);
           }}
         >
-          <View style={styles.overlay}>
-            <View style={styles.overlayHeader} />
-            <TextInput
-              style={styles.searchBar}
-              placeholder="Search for location..."
-              value={searchText}
-              onChangeText={(text) => {
-                setSearchText(text);
-                searchLocation(text);
-              }}
-            />
+          <View className="absolute bottom-0 w-full h-[70%] bg-white rounded-t-3xl shadow-xl">
+            <View className="w-12 h-1.5 bg-gray-300 rounded-full mx-auto mt-3 mb-6" />
+            <TouchableOpacity
+              onPress={() => setOverlayVisible(false)}
+              className="absolute right-4 top-4 p-2 rounded-full bg-gray-100"
+            >
+              <X size={20} color="#666" />
+            </TouchableOpacity>
+            <Text className="text-xl font-bold text-gray-800 px-6 mb-4">
+              Change Starting Location
+            </Text>
+            <View className="px-6 mb-4">
+              <View className="flex-row items-center bg-gray-100 rounded-xl px-4 py-3">
+                <Search size={20} color="#666" />
+                <TextInput
+                  className="flex-1 ml-2 text-gray-800"
+                  placeholder="Search for location..."
+                  placeholderTextColor="#999"
+                  value={searchText}
+                  onChangeText={(text) => {
+                    setSearchText(text);
+                    searchLocation(text);
+                  }}
+                />
+                {searchText.length > 0 && (
+                  <TouchableOpacity onPress={() => setSearchText("")}>
+                    <X size={18} color="#999" />
+                  </TouchableOpacity>
+                )}
+              </View>
+            </View>
             <FlatList
               data={searchResults}
               keyExtractor={(item) => item.place_id}
+              className="px-6"
               renderItem={({ item }) => (
                 <TouchableOpacity
                   onPress={() => selectLocation(item.place_id)}
-                  style={styles.searchItem}
+                  className="py-4 border-b border-gray-100 flex-row items-center"
                 >
-                  <Text>{item.description}</Text>
+                  <MapPin size={18} color="#3b82f6" />
+                  <View className="ml-3 flex-1">
+                    <Text className="text-gray-800 font-medium">
+                      {item.description}
+                    </Text>
+                  </View>
                 </TouchableOpacity>
               )}
+              ListEmptyComponent={
+                searchText.length > 0 ? (
+                  <View className="py-8 items-center">
+                    <Text className="text-gray-500">No locations found</Text>
+                  </View>
+                ) : null
+              }
             />
           </View>
         </PanGestureHandler>
@@ -406,24 +502,62 @@ export default function MapScreen() {
 
       {/* Transit Steps */}
       {selectedMode === "transit" && transitSteps.length > 0 && (
-        <View style={styles.stepsContainer}>
+        <View className="absolute bottom-0 w-full bg-white rounded-t-3xl shadow-xl pt-4 h-[60%] z-20">
+          <View className="w-12 h-1.5 bg-gray-300 rounded-full mx-auto mb-4" />
+          <TouchableOpacity
+            className="absolute right-4 top-4 p-2 rounded-full bg-gray-100"
+            onPress={() => setTransitSteps([])}
+          >
+            <X size={20} color="#666" />
+          </TouchableOpacity>
+          <Text className="text-xl font-bold text-gray-800 px-6 mb-4">
+            Transit Directions
+          </Text>
           <FlatList
             data={transitSteps}
             keyExtractor={(item, index) => index.toString()}
+            className="px-4"
             renderItem={({ item }) => (
-              <View style={styles.step}>
-                <Text style={styles.stepInstruction}>{item.instruction}</Text>
-                <Text style={styles.stepDetail}>
-                  Distance: {item.distance} | Duration: {item.duration}
+              <View className="mb-4 p-4 bg-gray-50 rounded-xl border-l-4 border-blue-500">
+                <Text className="text-gray-800 font-semibold mb-1">
+                  {item.instruction}
                 </Text>
-                {item.transitDetails && (
-                  <Text style={styles.transitDetail}>
-                    Take {item.transitDetails.vehicle} (
-                    {item.transitDetails.line}) from{" "}
-                    {item.transitDetails.departureStop} to{" "}
-                    {item.transitDetails.arrivalStop} (
-                    {item.transitDetails.numStops} stops)
+                <View className="flex-row items-center mb-2">
+                  <Clock size={14} color="#666" />
+                  <Text className="text-gray-500 text-xs ml-1">
+                    {item.duration}
                   </Text>
+                  <View className="w-1 h-1 bg-gray-400 rounded-full mx-2" />
+                  <MapPin size={14} color="#666" />
+                  <Text className="text-gray-500 text-xs ml-1">
+                    {item.distance}
+                  </Text>
+                </View>
+                {item.transitDetails && (
+                  <View className="mt-2 p-3 bg-white rounded-lg">
+                    <View className="flex-row items-center">
+                      <Bus size={16} color="#3b82f6" />
+                      <Text className="text-blue-500 font-medium ml-2">
+                        {item.transitDetails.line} {item.transitDetails.vehicle}
+                      </Text>
+                    </View>
+                    <View className="flex-row items-center mt-2">
+                      <View className="w-2 h-2 rounded-full bg-green-500" />
+                      <Text className="text-gray-700 ml-2 flex-1">
+                        {item.transitDetails.departureStop}
+                      </Text>
+                    </View>
+                    <View className="h-6 border-l border-dashed border-gray-300 ml-1" />
+                    <View className="flex-row items-center">
+                      <View className="w-2 h-2 rounded-full bg-red-500" />
+                      <Text className="text-gray-700 ml-2 flex-1">
+                        {item.transitDetails.arrivalStop}
+                      </Text>
+                    </View>
+                    <Text className="text-gray-500 text-xs mt-2">
+                      {item.transitDetails.numStops} stops
+                    </Text>
+                  </View>
                 )}
               </View>
             )}
@@ -433,131 +567,3 @@ export default function MapScreen() {
     </GestureHandlerRootView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "#fff",
-  },
-  map: {
-    width: "100%",
-    height: "85%",
-  },
-  backButtonContainer: {
-    position: "absolute",
-    top: 20,
-    left: 10,
-  },
-  backButton: {
-    backgroundColor: "purple",
-    padding: 10,
-    borderRadius: 8,
-  },
-  backButtonText: {
-    color: "#fff",
-    fontWeight: "bold",
-  },
-  changeLocationButton: {
-    position: "absolute",
-    bottom: 15,
-    right: 10,
-    backgroundColor: "blue",
-    padding: 10,
-    borderRadius: 8,
-  },
-  changeLocationText: {
-    color: "#fff",
-    fontWeight: "bold",
-  },
-  infoContainer: {
-    height: "15%",
-    backgroundColor: "#fff",
-    paddingVertical: 10,
-  },
-  scrollContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  card: {
-    backgroundColor: "#fff",
-    marginHorizontal: 5,
-    padding: 15,
-    borderRadius: 10,
-    alignItems: "center",
-  },
-  selectedCard: {
-    backgroundColor: "#009FFF",
-  },
-  modeText: {
-    fontSize: 16,
-    fontWeight: "bold",
-    color: "#333",
-  },
-  durationText: {
-    fontSize: 14,
-    color: "#555",
-  },
-  distanceText: {
-    fontSize: 14,
-    color: "#777",
-  },
-  overlay: {
-    position: "absolute",
-    bottom: 0,
-    width: "100%",
-    height: "70%",
-    backgroundColor: "#fff",
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    padding: 20,
-  },
-  overlayHeader: {
-    width: 60,
-    height: 6,
-    backgroundColor: "#ccc",
-    borderRadius: 3,
-    alignSelf: "center",
-    marginBottom: 15,
-  },
-  searchBar: {
-    borderWidth: 1,
-    borderColor: "#ddd",
-    padding: 10,
-    borderRadius: 8,
-    marginBottom: 10,
-  },
-  searchItem: {
-    padding: 15,
-    borderBottomWidth: 1,
-    borderColor: "#eee",
-  },
-  stepsContainer: {
-    backgroundColor: "#fff",
-    padding: 15,
-    height: "20%",
-  },
-  step: {
-    marginBottom: 10,
-    borderBottomWidth: 1,
-    borderColor: "#ddd",
-    paddingBottom: 5,
-  },
-  stepInstruction: {
-    fontSize: 14,
-    fontWeight: "600",
-  },
-  stepDetail: {
-    fontSize: 12,
-    color: "#666",
-  },
-  transitDetail: {
-    fontSize: 12,
-    color: "#444",
-    marginTop: 5,
-  },
-});

@@ -5,7 +5,7 @@ import { View, Dimensions } from "react-native";
 
 const { width } = Dimensions.get("window");
 
-export default function TabsNavigator() {
+function TabsNavigator() {
   const { user } = useAuth();
 
   if (!user) {
@@ -77,6 +77,8 @@ export default function TabsNavigator() {
     </Tabs>
   );
 }
+
+export default TabsNavigator;
 
 {
   /* <Tabs.Screen

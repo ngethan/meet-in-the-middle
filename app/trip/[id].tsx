@@ -20,7 +20,6 @@ import MapView, { Marker } from "react-native-maps";
 import {
   ArrowLeft,
   UserCircle,
-  Map,
   Play,
   Navigation2,
   MapPin,
@@ -1029,7 +1028,7 @@ export default function TripDetailsScreen() {
               }}
               activeOpacity={0.8}
             >
-              <Map size={18} color="white" />
+              <MapPin size={18} color="white" />
               <Text className="text-white font-bold ml-2">Show Routes</Text>
             </TouchableOpacity>
           </View>
@@ -1154,25 +1153,39 @@ export default function TripDetailsScreen() {
               </View>
 
               {/* Map View */}
-              <MapView
-                style={{ width: "100%", height: "70%" }}
-                initialRegion={{
-                  latitude: selectedParticipant?.latitude || 38.65709289910062,
-                  longitude:
-                    selectedParticipant?.longitude || -90.30219997026222,
-                  latitudeDelta: 0.1,
-                  longitudeDelta: 0.1,
-                }}
-                onPress={(e) => handleSelectLocation(e.nativeEvent.coordinate)}
-              >
-                {selectedLocation && (
-                  <Marker coordinate={selectedLocation} title="New Location">
-                    <View className="bg-indigo-500 p-2 rounded-full border-2 border-white">
-                      <MapPin size={20} color="white" />
-                    </View>
-                  </Marker>
-                )}
-              </MapView>
+              <View className="w-full h-[70%] bg-gray-100 relative">
+                <MapView
+                  style={{ width: "100%", height: "100%" }}
+                  provider="google"
+                  initialRegion={{
+                    latitude:
+                      selectedParticipant?.latitude || 38.65709289910062,
+                    longitude:
+                      selectedParticipant?.longitude || -90.30219997026222,
+                    latitudeDelta: 0.0922,
+                    longitudeDelta: 0.0421,
+                  }}
+                  onPress={(e) => {
+                    handleSelectLocation({
+                      latitude: e.nativeEvent.coordinate.latitude,
+                      longitude: e.nativeEvent.coordinate.longitude,
+                    });
+                  }}
+                >
+                  {selectedLocation && (
+                    <Marker
+                      coordinate={{
+                        latitude: selectedLocation.latitude,
+                        longitude: selectedLocation.longitude,
+                      }}
+                    >
+                      <View className="bg-indigo-500 p-2 rounded-full border-2 border-white">
+                        <MapPin size={20} color="white" />
+                      </View>
+                    </Marker>
+                  )}
+                </MapView>
+              </View>
 
               {/* Search Button */}
               <TouchableOpacity

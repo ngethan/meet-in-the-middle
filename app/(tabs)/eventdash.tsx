@@ -9,6 +9,7 @@ import {
   Modal,
   TextInput,
   Dimensions,
+  ActivityIndicator,
 } from "react-native";
 import {
   Menu,
@@ -17,6 +18,7 @@ import {
   ArrowLeft,
   ChevronDown,
   UserCircle2Icon,
+  Calendar,
 } from "lucide-react-native";
 import { useRouter } from "expo-router";
 import NavigationDrawer from "../../components/Drawer";
@@ -49,15 +51,15 @@ export default function EventDashBoard() {
   const [searchText, setSearchText] = useState("");
   const [isOverlayVisible, setOverlayVisible] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [isSearching, setIsSearching] = useState(false);
 
   const router = useRouter();
 
   const TICKETMASTER_API_KEY = process.env.EXPO_PUBLIC_TICKETMASTER_API_KEY;
 
   const fetchEvents = async (lat: number, lon: number) => {
-    console.log("latitude: ", lat, "longitude: ", lon);
     try {
-      // setLoading(true); // Show loading overlay
+      setLoading(true); // Show loading overlay
       const response = await axios.get(
         `https://app.ticketmaster.com/discovery/v2/events.json`,
         {
@@ -121,6 +123,7 @@ export default function EventDashBoard() {
       }
 
       try {
+        setLoading(true);
         let location = await Location.getCurrentPositionAsync({});
         setLocation(location);
 
@@ -134,6 +137,7 @@ export default function EventDashBoard() {
       } catch (error) {
         console.error("Error fetching location:", error);
         setErrorMsg("Error fetching location");
+        setLoading(false);
       }
     }
 
@@ -143,6 +147,7 @@ export default function EventDashBoard() {
   // Search new starting location
   const searchLocation = async (text: string) => {
     try {
+      setIsSearching(true);
       const response = await axios.get(
         `https://maps.googleapis.com/maps/api/place/autocomplete/json`,
         {
@@ -159,32 +164,40 @@ export default function EventDashBoard() {
       setLoading(false); // Hide loading overlay
       console.log(1);
       console.error("Error fetching events:", error);
+    } finally {
+      setIsSearching(false);
     }
   };
 
   const changeLocation = async (location: any) => {
-    let response = await axios.get(
-      `https://maps.googleapis.com/maps/api/place/details/json`,
-      {
-        params: {
-          place_id: location.place_id,
-          key: GOOGLE_MAPS_API_KEY,
+    try {
+      setLoading(true);
+      let response = await axios.get(
+        `https://maps.googleapis.com/maps/api/place/details/json`,
+        {
+          params: {
+            place_id: location.place_id,
+            key: GOOGLE_MAPS_API_KEY,
+          },
         },
-      },
-    );
-    let lat = response.data.result.geometry.location.lat;
-    let lon = response.data.result.geometry.location.lng;
+      );
+      let lat = response.data.result.geometry.location.lat;
+      let lon = response.data.result.geometry.location.lng;
 
-    let geoAddress = await Location.reverseGeocodeAsync({
-      latitude: lat,
-      longitude: lon,
-    });
+      let geoAddress = await Location.reverseGeocodeAsync({
+        latitude: lat,
+        longitude: lon,
+      });
 
-    if (geoAddress.length > 0) {
-      setAddress(geoAddress[0]);
+      if (geoAddress.length > 0) {
+        setAddress(geoAddress[0]);
+      }
+
+      fetchEvents(lat, lon);
+    } catch (error) {
+      console.error("Error changing location:", error);
+      setLoading(false);
     }
-
-    fetchEvents(lat, lon);
   };
 
   let currentLocation = "Waiting...";
@@ -217,76 +230,110 @@ export default function EventDashBoard() {
   return (
     <View className="flex-1 bg-gray-50">
       {/* Header */}
-      <View className="flex-row justify-between items-center px-6 pt-16 pb-4 bg-white shadow-sm">
+      <View className="flex-row justify-between items-center px-6 pt-16 pb-4 bg-white shadow-sm border-b border-gray-100">
         <TouchableOpacity
-          className="p-2 rounded-full active:bg-gray-100"
           onPress={toggleDrawer}
+          className="w-10 h-10 rounded-full bg-gray-50 items-center justify-center active:bg-gray-100"
         >
-          <Menu size={28} color="#333" />
+          <Menu size={24} color="#333" />
         </TouchableOpacity>
 
         <TouchableOpacity
-          className="flex-row items-center bg-white py-2 px-3 rounded-full border border-gray-200 active:bg-gray-50"
           onPress={() => setOverlayVisible(true)}
+          className="flex-row items-center bg-gray-50 px-3 py-2 rounded-full active:bg-gray-100"
         >
           <MapPin size={16} color="#3b82f6" className="mr-2" />
-          <Text className="text-gray-800 font-semibold mr-1" numberOfLines={1}>
+          <Text className="text-gray-800 font-medium mr-1" numberOfLines={1}>
             {currentLocation}
           </Text>
-          <ChevronDown size={16} color="#666" />
+          <ChevronDown size={16} color="#3b82f6" />
         </TouchableOpacity>
 
         <TouchableOpacity
-          className="p-2 rounded-full active:bg-gray-100"
           onPress={() => router.push("/profile")}
+          className="w-10 h-10 rounded-full bg-gray-50 items-center justify-center active:bg-gray-100"
         >
-          <UserCircle2Icon strokeWidth={1.5} size={28} color="#333" />
+          <UserCircle2Icon size={24} color="#333" />
         </TouchableOpacity>
       </View>
-
       {/* Event List */}
-      <FlatList
-        data={events}
-        keyExtractor={(item: any) => item.id}
-        renderItem={({ item }) => (
-          <TouchableOpacity
-            className="mt-4 bg-white rounded-2xl shadow-md overflow-hidden mx-4 mb-2"
-            activeOpacity={0.9}
-            onPress={() => router.push(`/event/${item.id}`)}
-          >
-            <Image
-              source={{ uri: item.image }}
-              className="w-full h-72"
-              resizeMode="cover"
-            />
-            <View className="absolute bottom-0 left-0 right-0 bg-black/60 p-4">
-              <Text className="text-white text-xl font-bold">{item.title}</Text>
-              <View className="flex-row items-center mt-1">
-                <Text className="text-yellow-300 font-semibold">
-                  {item.date}
-                </Text>
-                {location && item.latitude && item.longitude && (
-                  <View className="flex-row items-center ml-3">
-                    <MapPin size={14} color="#fcd34d" />
-                    <Text className="text-yellow-300 font-semibold ml-1">
-                      {calculateDistance(
-                        location.coords.latitude,
-                        location.coords.longitude,
-                        item.latitude,
-                        item.longitude,
-                      )}{" "}
-                      km away
-                    </Text>
-                  </View>
-                )}
+      {loading ? (
+        <View className="flex-1 items-center justify-center">
+          <ActivityIndicator size="large" color="#3b82f6" />
+          <Text className="text-gray-500 mt-4 font-medium">
+            Discovering events nearby...
+          </Text>
+        </View>
+      ) : (
+        <FlatList
+          data={events}
+          keyExtractor={(item: any) => item.id}
+          renderItem={({ item }) => (
+            <TouchableOpacity
+              className="mt-4 bg-white rounded-3xl shadow-lg overflow-hidden mx-4 mb-3 border border-gray-100"
+              activeOpacity={0.7}
+              onPress={() => router.push(`/event/${item.id}`)}
+            >
+              <View className="relative">
+                <Image
+                  source={{ uri: item.image }}
+                  className="w-full h-80"
+                  resizeMode="cover"
+                />
+                <View className="absolute top-4 right-4 bg-black/30 px-3 py-1.5 rounded-full backdrop-blur-md">
+                  <Text className="text-white font-semibold">{item.date}</Text>
+                </View>
               </View>
-            </View>
-          </TouchableOpacity>
-        )}
-        contentContainerStyle={{ paddingBottom: 100 }}
-        showsVerticalScrollIndicator={false}
-        ListEmptyComponent={
-          !loading ? (
+              <View className="p-4">
+                {/* Event Title */}
+                <Text className="text-2xl font-bold text-gray-900 mb-2">
+                  {item.title}
+                </Text>
+
+                {/* Event Details & Action Button */}
+                <View className="flex-row justify-between items-center mt-2">
+                  <View className="flex-row items-center">
+                    <View className="w-10 h-10 rounded-full bg-blue-50 items-center justify-center">
+                      <Calendar size={18} color="#3b82f6" />
+                    </View>
+                    <View className="ml-3">
+                      <Text className="text-gray-500 text-xs">Date</Text>
+                      <Text className="text-gray-800 font-medium">
+                        {item.date}
+                      </Text>
+                    </View>
+                  </View>
+
+                  <TouchableOpacity
+                    className="bg-gradient-to-r from-blue-500 to-blue-600 px-5 py-2.5 rounded-xl shadow-sm"
+                    onPress={(e) => {
+                      e.stopPropagation();
+                      router.push(`/event/${item.id}`);
+                    }}
+                  >
+                    {/* Distance Badge */}
+                    {location && item.latitude && item.longitude && (
+                      <View className="flex-row items-center bg-blue-50 self-start px-3 py-1.5 rounded-full mb-3">
+                        <MapPin size={14} color="#3b82f6" />
+                        <Text className="text-blue-700 font-medium ml-1">
+                          {calculateDistance(
+                            location.coords.latitude,
+                            location.coords.longitude,
+                            item.latitude,
+                            item.longitude,
+                          )}{" "}
+                          km away
+                        </Text>
+                      </View>
+                    )}
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </TouchableOpacity>
+          )}
+          contentContainerStyle={{ paddingBottom: 100 }}
+          showsVerticalScrollIndicator={false}
+          ListEmptyComponent={
             <View className="items-center justify-center py-20">
               <Text className="text-gray-500 text-lg">
                 No events found nearby
@@ -300,9 +347,9 @@ export default function EventDashBoard() {
                 </Text>
               </TouchableOpacity>
             </View>
-          ) : null
-        }
-      />
+          }
+        />
+      )}
       <NavigationDrawer onClose={toggleDrawer} isOpen={drawerOpen} />
 
       {/* Location Search Modal */}
@@ -343,6 +390,13 @@ export default function EventDashBoard() {
                       <X size={18} color="#9ca3af" />
                     </TouchableOpacity>
                   ) : null}
+                  {isSearching && (
+                    <ActivityIndicator
+                      size="small"
+                      color="#3b82f6"
+                      style={{ marginLeft: 8 }}
+                    />
+                  )}
                 </View>
 
                 {/* Search Results List */}
@@ -367,10 +421,17 @@ export default function EventDashBoard() {
                     </TouchableOpacity>
                   )}
                   ListEmptyComponent={
-                    searchText ? (
+                    searchText && !isSearching ? (
                       <View className="items-center py-8">
                         <Text className="text-gray-500">
                           No locations found
+                        </Text>
+                      </View>
+                    ) : isSearching ? (
+                      <View className="items-center py-8">
+                        <ActivityIndicator size="small" color="#3b82f6" />
+                        <Text className="text-gray-500 mt-2">
+                          Searching locations...
                         </Text>
                       </View>
                     ) : null
@@ -381,13 +442,6 @@ export default function EventDashBoard() {
           </View>
         </Modal>
       </GestureHandlerRootView>
-
-      {/* Loading Animation */}
-      <LoadingOverlay
-        visible={loading}
-        type="dots"
-        message="Loading Events..."
-      />
     </View>
   );
 }

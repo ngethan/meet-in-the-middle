@@ -6,7 +6,7 @@ module.exports = async function (env, argv) {
   // Customize the config before returning it.
   config.resolve.alias = {
     ...config.resolve.alias,
-    "react-native-maps": "react-native-web-maps",
+    "react-native-maps": "react-native-maps",
   };
 
   return config;

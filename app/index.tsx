@@ -6,10 +6,12 @@ import {
   Text,
   Dimensions,
   StatusBar,
+  Image,
 } from "react-native";
 import { Link } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import { BlurView } from "expo-blur";
+import { Plane, MapPin, Compass } from "lucide-react-native";
 
 export default function WelcomeScreen() {
   // Animations
@@ -18,6 +20,7 @@ export default function WelcomeScreen() {
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const rotateAnim = useRef(new Animated.Value(0)).current;
   const pulseAnim = useRef(new Animated.Value(1)).current;
+  const iconRotateAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     // Floating animation
@@ -50,6 +53,15 @@ export default function WelcomeScreen() {
           useNativeDriver: true,
         }),
       ]),
+    ).start();
+
+    // Icon rotation animation
+    Animated.loop(
+      Animated.timing(iconRotateAnim, {
+        toValue: 1,
+        duration: 12000,
+        useNativeDriver: true,
+      }),
     ).start();
 
     // Pulsing animation for CTA
@@ -94,8 +106,13 @@ export default function WelcomeScreen() {
     outputRange: ["-1deg", "1deg"],
   });
 
+  const iconRotation = iconRotateAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ["0deg", "360deg"],
+  });
+
   return (
-    <Link href="/tutorial" asChild>
+    <Link href="/auth" asChild>
       <TouchableOpacity className="flex-1" activeOpacity={0.8}>
         <StatusBar
           translucent
@@ -104,7 +121,7 @@ export default function WelcomeScreen() {
         />
 
         <LinearGradient
-          colors={["#4361EE", "#3A0CA3"]}
+          colors={["#3b82f6", "#1e40af"]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={{
@@ -114,6 +131,23 @@ export default function WelcomeScreen() {
             height: "100%",
           }}
         />
+
+        {/* Background pattern */}
+        <View
+          style={{
+            position: "absolute",
+            width: "100%",
+            height: "100%",
+            opacity: 0.05,
+            zIndex: 1,
+          }}
+        >
+          <Image
+            source={require("../assets/images/world-map.png")}
+            style={{ width: "100%", height: "100%", opacity: 0.6 }}
+            resizeMode="cover"
+          />
+        </View>
 
         {/* Decorative elements */}
         <Animated.View
@@ -126,6 +160,7 @@ export default function WelcomeScreen() {
             borderRadius: 60,
             backgroundColor: "rgba(255,255,255,0.1)",
             transform: [{ translateY: floatingY }],
+            zIndex: 2,
           }}
         />
 
@@ -139,6 +174,7 @@ export default function WelcomeScreen() {
             borderRadius: 40,
             backgroundColor: "rgba(255,255,255,0.08)",
             transform: [{ translateY: floatingY }],
+            zIndex: 2,
           }}
         />
 
@@ -152,8 +188,19 @@ export default function WelcomeScreen() {
             borderRadius: 50,
             backgroundColor: "rgba(255,255,255,0.05)",
             transform: [{ translateY: floatingY }],
+            zIndex: 2,
+            justifyContent: "center",
+            alignItems: "center",
           }}
-        />
+        >
+          <Animated.View
+            style={{
+              transform: [{ rotate: iconRotation }],
+            }}
+          >
+            <Compass size={40} color="rgba(255,255,255,0.6)" />
+          </Animated.View>
+        </Animated.View>
 
         <Animated.View
           style={{
@@ -165,8 +212,13 @@ export default function WelcomeScreen() {
             borderRadius: 30,
             backgroundColor: "rgba(255,255,255,0.07)",
             transform: [{ translateY: floatingY }],
+            zIndex: 2,
+            justifyContent: "center",
+            alignItems: "center",
           }}
-        />
+        >
+          <MapPin size={24} color="rgba(255,255,255,0.6)" />
+        </Animated.View>
 
         <Animated.View
           style={{
@@ -178,10 +230,11 @@ export default function WelcomeScreen() {
             borderRadius: 20,
             backgroundColor: "rgba(255,255,255,0.04)",
             transform: [{ translateY: floatingY }],
+            zIndex: 2,
           }}
         />
 
-        <View className="flex-1 justify-center items-center px-8">
+        <View className="flex-1 justify-center items-center px-8 z-10">
           <Animated.View
             style={{
               transform: [{ scale: scaleAnim }, { rotate: rotation }],
@@ -189,16 +242,30 @@ export default function WelcomeScreen() {
             }}
             className="items-center px-12 py-10 rounded-3xl"
           >
-            <Animated.Text
-              className="text-white text-8xl font-black tracking-tight"
+            <Animated.View
               style={{
-                textShadowColor: "rgba(0,0,0,0.3)",
-                textShadowOffset: { width: 2, height: 2 },
-                textShadowRadius: 8,
+                flexDirection: "row",
+                alignItems: "center",
+                marginBottom: 8,
               }}
             >
-              MITM
-            </Animated.Text>
+              <Plane
+                size={40}
+                color="white"
+                style={{ marginRight: 12 }}
+                strokeWidth={1.5}
+              />
+              <Animated.Text
+                className="text-white text-7xl font-black tracking-tight"
+                style={{
+                  textShadowColor: "rgba(0,0,0,0.3)",
+                  textShadowOffset: { width: 2, height: 2 },
+                  textShadowRadius: 8,
+                }}
+              >
+                MITM
+              </Animated.Text>
+            </Animated.View>
 
             <Animated.Text
               className="text-white/90 text-xl font-medium mt-4 text-center"
@@ -216,13 +283,30 @@ export default function WelcomeScreen() {
 
           <Animated.View
             style={{
-              transform: [{ translateY: floatingY }, { scale: pulseAnim }],
+              transform: [{ scale: pulseAnim }],
+              opacity: fadeAnim,
+              marginTop: 80,
+            }}
+          >
+            <TouchableOpacity
+              className=" px-8 py-4border border-white/30"
+              activeOpacity={0.7}
+            >
+              <Text className="text-white text-lg font-semibold">
+                Start Your Journey
+              </Text>
+            </TouchableOpacity>
+          </Animated.View>
+
+          <Animated.View
+            style={{
+              transform: [{ translateY: floatingY }],
               opacity: fadeAnim,
             }}
-            className="absolute bottom-32"
+            className="absolute bottom-16"
           >
-            <Text className="text-white text-lg font-medium">
-              Tap to Start →
+            <Text className="text-white/80 text-base font-medium">
+              Discover • Connect • Travel
             </Text>
           </Animated.View>
         </View>

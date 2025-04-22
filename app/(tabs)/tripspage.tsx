@@ -10,6 +10,7 @@ import {
   TextInput,
   Platform,
   Alert,
+  ActivityIndicator,
 } from "react-native";
 import { useRouter, useLocalSearchParams, Link } from "expo-router";
 import DateTimePicker from "@react-native-community/datetimepicker";
@@ -19,6 +20,8 @@ import * as Location from "expo-location";
 import { useAuth } from "@/context/AuthProvider";
 import moment from "moment";
 import { FontAwesome } from "@expo/vector-icons";
+import { Menu, UserCircle2Icon } from "lucide-react-native";
+import NavigationDrawer from "../../components/Drawer";
 
 const { width } = Dimensions.get("window");
 
@@ -50,6 +53,11 @@ export default function TripsPage() {
   const [isLoading, setIsLoading] = useState(false);
 
   const { user } = useAuth();
+  const [drawerOpen, setDrawerOpen] = useState(false);
+
+  const toggleDrawer = () => {
+    setDrawerOpen(!drawerOpen);
+  };
 
   useEffect(() => {
     fetchChats();
@@ -340,13 +348,33 @@ export default function TripsPage() {
   return (
     <View className="flex-1 bg-gray-50">
       {/* Header */}
+      <View className="flex-row justify-between items-center px-6 pt-16 pb-4 bg-white shadow-sm border-b border-gray-100">
+        <TouchableOpacity
+          onPress={toggleDrawer}
+          className="w-10 h-10 rounded-full bg-gray-50 items-center justify-center active:bg-gray-100"
+        >
+          <Menu size={24} color="#333" />
+        </TouchableOpacity>
 
-      <View className="flex-row justify-between items-center px-6 pt-16 pb-4 bg-blue-400 shadow-md">
-        <Text className="text-2xl font-bold text-black">My Trips</Text>
+        <Text className="text-xl text-black">My Trips</Text>
+
+        <TouchableOpacity
+          onPress={() => router.push("/profile")}
+          className="w-10 h-10 rounded-full bg-gray-50 items-center justify-center active:bg-gray-100"
+        >
+          <UserCircle2Icon size={24} color="#333" />
+        </TouchableOpacity>
       </View>
 
-      {/* Empty state */}
-      {chats.length === 0 ? (
+      {/* Loading indicator */}
+      {isLoading ? (
+        <View className="flex-1 justify-center items-center">
+          <ActivityIndicator size="large" color="#3b82f6" />
+          <Text className="mt-4 text-gray-600 font-medium">
+            Loading trips...
+          </Text>
+        </View>
+      ) : chats.length === 0 ? (
         <View className="flex-1 justify-center items-center p-8">
           <Image
             source={{
@@ -413,10 +441,10 @@ export default function TripsPage() {
                   </TouchableOpacity>
 
                   <TouchableOpacity
-                    className="bg-gradient-to-r from-red-500 to-pink-600 p-2.5 rounded-full shadow-sm"
+                    className="bg-red-500 p-2.5 rounded-full shadow-sm"
                     onPress={() => handleDeleteChat(chat.id)}
                   >
-                    <Trash2 size={22} color="black" />
+                    <Trash2 size={22} color="white" />
                   </TouchableOpacity>
                 </View>
               </View>
