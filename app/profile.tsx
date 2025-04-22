@@ -34,9 +34,10 @@ export default function Account({ session }: { session: Session }) {
       // ✅ Fetch user profile
       const { data, error } = await supabase
         .from("users")
-        .select("fullName")
+        .select("*")
         .eq("id", user.id)
         .single();
+      console.log(data);
 
       if (error) throw error;
       setEmail(user.email);

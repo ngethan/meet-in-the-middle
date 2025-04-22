@@ -434,9 +434,7 @@ export default function MapScreen() {
           </View>
                   
         </PanGestureHandler>
-              
       </Modal>
-          
     </GestureHandlerRootView>
   );
 }
@@ -566,9 +564,6 @@ const styles = StyleSheet.create({
     marginRight: 10,
     alignItems: "center",
   },
-  selectedCard: {
-    backgroundColor: "#66A3E0",
-  },
   travelMode: {
     fontWeight: "bold",
     marginBottom: 5,
@@ -581,33 +576,6 @@ const styles = StyleSheet.create({
   distanceText: {
     fontSize: 14,
     color: "#000",
-  },
-  stepsContainer: {
-    backgroundColor: "#fff",
-    padding: 15,
-    height: 150,
-    borderTopWidth: 1,
-    borderColor: "#0066CC",
-  },
-  step: {
-    marginBottom: 10,
-    borderBottomWidth: 1,
-    borderColor: "#0066CC",
-    paddingBottom: 5,
-  },
-  stepInstruction: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#003366",
-  },
-  stepDetail: {
-    fontSize: 12,
-    color: "#0066CC",
-  },
-  transitDetail: {
-    fontSize: 12,
-    color: "#0066CC",
-    marginTop: 5,
   },
   bottomContainer: {
     position: "absolute",

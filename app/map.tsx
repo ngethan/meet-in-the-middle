@@ -14,7 +14,7 @@ import axios from "axios";
 import { useRouter } from "expo-router";
 import DropDownPicker from "react-native-dropdown-picker";
 
-const GOOGLE_MAPS_API_KEY = process.env.EXPO_PUBLIC_API_KEY;
+const GOOGLE_MAPS_API_KEY = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY;
 const travelModes = ["driving", "walking", "bicycling", "transit"];
 const routeColors = [
   "purple",
@@ -412,7 +412,6 @@ export default function MapScreen() {
     </View>
   );
 }
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -450,17 +449,18 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   selectedCard: {
-    backgroundColor: "#ED8F03",
+    backgroundColor: "#3b82f6",
   },
   travelMode: {
     fontWeight: "bold",
     marginBottom: 5,
+    color: "#3b82f6",
   },
   backButton: {
     position: "absolute",
     top: 50,
     left: 10,
-    backgroundColor: "#ED8F03",
+    backgroundColor: "#3b82f6",
     padding: 10,
     borderRadius: 8,
   },
@@ -473,25 +473,26 @@ const styles = StyleSheet.create({
     padding: 15,
     height: 150,
     borderTopWidth: 1,
-    borderColor: "#ddd",
+    borderColor: "#3b82f6",
   },
   step: {
     marginBottom: 10,
     borderBottomWidth: 1,
-    borderColor: "#ddd",
+    borderColor: "#3b82f6",
     paddingBottom: 5,
   },
   stepInstruction: {
     fontSize: 14,
     fontWeight: "600",
+    color: "#3b82f6",
   },
   stepDetail: {
     fontSize: 12,
-    color: "#666",
+    color: "#3b82f6",
   },
   transitDetail: {
     fontSize: 12,
-    color: "#444",
+    color: "#3b82f6",
     marginTop: 5,
   },
 });

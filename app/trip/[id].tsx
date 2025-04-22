@@ -819,7 +819,7 @@ export default function TripDetailsScreen() {
             >
               <ArrowLeft size={24} color="#333" />
             </TouchableOpacity>
-            <Text className="text-xl font-bold text-gray-800">
+            <Text className="text-xl font text-gray-800">
               {trip?.name || "Loading trip..."}
             </Text>
             <View style={{ width: 28 }} />
@@ -1140,94 +1140,68 @@ export default function TripDetailsScreen() {
           </BlurView>
         </Modal>
 
-        {/* Map Picker Modal */}
+        {/* 📌 Map Picker Modal */}
         <Modal visible={mapModalVisible} transparent animationType="slide">
-          <View className="flex-1 bg-black/50 backdrop-blur-md">
-            <View className="flex-1 mt-12 bg-white rounded-t-3xl shadow-xl overflow-hidden">
-              {/* Header */}
-              <View className="p-4 border-b border-gray-200 bg-white">
-                <View className="w-12 h-1 bg-gray-300 rounded-full mx-auto mb-4" />
-                <Text className="text-xl font-bold text-gray-900 text-center">
-                  {selectedParticipant?.fullName}'s Starting Point
-                </Text>
-              </View>
+          <View className="flex-1 bg-black/50 backdrop-blur-md justify-center items-center">
+            <View className="w-[90%] h-[80%] bg-white rounded-2xl shadow-xl overflow-hidden">
+              {/* 📌 Header */}
+              <Text className="text-lg font-bold text-gray-900 text-center my-4">
+                Update Starting Location for {selectedParticipant?.fullName}
+              </Text>
 
-              {/* Map View */}
-              <View className="w-full h-[70%] bg-gray-100 relative">
-                <MapView
-                  style={{ width: "100%", height: "100%" }}
-                  provider="google"
-                  initialRegion={{
-                    latitude:
-                      selectedParticipant?.latitude || 38.65709289910062,
-                    longitude:
-                      selectedParticipant?.longitude || -90.30219997026222,
-                    latitudeDelta: 0.0922,
-                    longitudeDelta: 0.0421,
-                  }}
-                  onPress={(e) => {
-                    handleSelectLocation({
-                      latitude: e.nativeEvent.coordinate.latitude,
-                      longitude: e.nativeEvent.coordinate.longitude,
-                    });
-                  }}
-                >
-                  {selectedLocation && (
-                    <Marker
-                      coordinate={{
-                        latitude: selectedLocation.latitude,
-                        longitude: selectedLocation.longitude,
-                      }}
-                    >
-                      <View className="bg-indigo-500 p-2 rounded-full border-2 border-white">
-                        <MapPin size={20} color="white" />
-                      </View>
-                    </Marker>
-                  )}
-                </MapView>
-              </View>
+              {/* 📌 Map View */}
+              <MapView
+                style={{ width: "100%", height: "75%" }}
+                initialRegion={{
+                  latitude: selectedParticipant?.latitude || 38.65709289910062,
+                  longitude:
+                    selectedParticipant?.longitude || -90.30219997026222,
+                  latitudeDelta: 0.1,
+                  longitudeDelta: 0.1,
+                }}
+                onPress={(e) => handleSelectLocation(e.nativeEvent.coordinate)}
+              >
+                {selectedLocation && (
+                  <Marker coordinate={selectedLocation} title="New Location" />
+                )}
+              </MapView>
 
-              {/* Search Button */}
+              {/* 📌 Change Location Button */}
               <TouchableOpacity
-                className="absolute top-20 right-0 left-0 mx-auto w-5/6 bg-white py-3 px-4 rounded-full shadow-lg flex-row items-center border border-gray-200"
+                className="bg-blue-500 px-4 py-3 mx-4 my-2 rounded-lg shadow-lg"
                 onPress={() => {
                   setMapModalVisible(false);
                   setOverlayVisible(true);
                 }}
               >
-                <Search size={20} color="#6b7280" />
-                <Text className="text-gray-500 ml-2 flex-1">
-                  Search for a location...
+                <Text className="text-white font-bold text-center ">
+                  Search Your Location
                 </Text>
               </TouchableOpacity>
 
-              {/* Action Buttons */}
-              <View className="p-4 bg-white border-t border-gray-200">
-                <View className="flex-row justify-between">
-                  <TouchableOpacity
-                    className="bg-gradient-to-r from-indigo-500 to-purple-600 py-4 w-[48%] rounded-xl shadow-md"
-                    onPress={confirmLocation}
-                    activeOpacity={0.8}
-                  >
-                    <Text className="text-white font-bold text-center text-lg">
-                      Confirm
-                    </Text>
-                  </TouchableOpacity>
-
-                  <TouchableOpacity
-                    className="bg-gray-200 py-4 w-[48%] rounded-xl"
-                    onPress={() => {
-                      setMapModalVisible(false);
-                      setSelectedLocation(null);
-                      setOverlayVisible(false);
-                      setPreferenceModalVisible(true);
-                    }}
-                  >
-                    <Text className="text-gray-800 font-bold text-center text-lg">
-                      Cancel
-                    </Text>
-                  </TouchableOpacity>
-                </View>
+              {/* 📌 Confirm & Cancel Buttons */}
+              <View className="flex-row justify-between p-4 bg-white border-t border-gray-200">
+                <TouchableOpacity
+                  className="bg-blue-500 py-3 w-[48%] rounded-xl shadow-lg"
+                  onPress={confirmLocation}
+                >
+                  <Text className="text-white font-bold text-center text-lg">
+                    Confirm
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  className="bg-gray-300 py-3 w-[48%] rounded-xl"
+                  onPress={() => {
+                    setMapModalVisible(false);
+                    setSelectedLocation(null);
+                    setOverlayVisible(false);
+                    setPreferenceModalVisible(true);
+                  }}
+                >
+                  <Text className="text-gray-800 font-bold text-center text-lg">
+                    Cancel
+                  </Text>
+                </TouchableOpacity>
               </View>
             </View>
           </View>

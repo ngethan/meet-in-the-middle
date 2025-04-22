@@ -277,22 +277,27 @@ export default function TripsPage() {
     if (!members || members.length === 0) {
       return Alert.alert("Error", "No users found in this chat.");
     }
+    console.log("members", members);
+
     // ✅ Step 3: Add all users to the trip
     const participantsData = members.map((member) => ({
-      id: newId, // Unique ID for each participant
+      id: nonCryptoUUID(), // Unique ID for each participant
       tripId: newTripId,
       userId: member.userId,
       startingLocation: null, // Default value
       latitude: 0.0, // Default
       longitude: 0.0, // Default
       joinedAt: new Date().toISOString(),
+      preferences: [],
     }));
 
-    console.log("Success");
+    console.log("participantsData", participantsData);
 
     const { error: participantsError } = await supabase
       .from("tripParticipants")
       .insert(participantsData);
+
+    console.log("participantsError", participantsError);
 
     if (participantsError) throw participantsError;
 
@@ -349,13 +354,6 @@ export default function TripsPage() {
     <View className="flex-1 bg-gray-50">
       {/* Header */}
       <View className="flex-row justify-between items-center px-6 pt-16 pb-4 bg-white shadow-sm border-b border-gray-100">
-        <TouchableOpacity
-          onPress={toggleDrawer}
-          className="w-10 h-10 rounded-full bg-gray-50 items-center justify-center active:bg-gray-100"
-        >
-          <Menu size={24} color="#333" />
-        </TouchableOpacity>
-
         <Text className="text-xl text-black">My Trips</Text>
 
         <TouchableOpacity

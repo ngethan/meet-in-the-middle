@@ -156,7 +156,7 @@ export default function TripScreen() {
       {/* 📌 Start Trip Button */}
       <View className="absolute bottom-10 left-0 right-0 flex items-center">
         <TouchableOpacity
-          className="bg-orange-500 px-6 py-3 rounded-lg shadow-lg"
+          className="bg-blue-500 px-6 py-3 rounded-lg shadow-lg"
           onPress={startTrip}
           disabled={loading}
         >
