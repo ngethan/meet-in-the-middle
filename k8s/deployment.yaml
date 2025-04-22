@@ -1,0 +1,97 @@
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: project-draft-db
+  labels:
+    app: project-draft-db
+spec:
+  selector:
+    matchLabels:
+      app: project-draft-db
+  serviceName: project-draft-db
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: project-draft-db
+    spec:
+      containers:
+        - image: docker.io/library/postgres:latest
+          name: project-draft-db
+          ports:
+            - containerPort: 5432
+          env:
+            - name: POSTGRES_PASSWORD
+              value: password
+          livenessProbe:
+            tcpSocket:
+              port: 5432
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: project-draft-db
+spec:
+  selector:
+    app: project-draft-db
+  ports:
+    - port: 5432
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: project-draft
+  labels:
+    app: project-draft
+spec:
+  selector:
+    matchLabels:
+      app: project-draft
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: project-draft
+    spec:
+      containers:
+        - image: project-draft:release
+          imagePullPolicy: Never
+          name: project-draft
+          command: ["./script/run"]
+          ports:
+            - containerPort: 3000
+          env:
+            - name: APP_APPLICATION__HOST
+              value: "0.0.0.0"
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: project-draft
+spec:
+  type: LoadBalancer
+  selector:
+    app: project-draft
+  ports:
+    - port: 3000
+
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: project-draft-ingress
+spec:
+  rules:
+    - http:
+        paths:
+          - pathType: Prefix
+            path: /
+            backend:
+              service:
+                name: project-draft
+                port:
+                  number: 3000
