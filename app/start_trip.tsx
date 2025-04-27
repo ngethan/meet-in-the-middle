@@ -10,9 +10,8 @@ import MapView, { Marker, Polyline } from "react-native-maps";
 import { useLocalSearchParams } from "expo-router";
 import axios from "axios";
 import { supabase } from "@/lib/supabase";
-import { FontAwesome } from "@expo/vector-icons";
 
-const GOOGLE_MAPS_API_KEY = process.env.EXPO_PUBLIC_API_KEY;
+const GOOGLE_MAPS_API_KEY = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY;
 const polyline = require("@mapbox/polyline");
 
 export default function TripScreen() {
@@ -157,7 +156,7 @@ export default function TripScreen() {
       {/* 📌 Start Trip Button */}
       <View className="absolute bottom-10 left-0 right-0 flex items-center">
         <TouchableOpacity
-          className="bg-orange-500 px-6 py-3 rounded-lg shadow-lg"
+          className="bg-blue-500 px-6 py-3 rounded-lg shadow-lg"
           onPress={startTrip}
           disabled={loading}
         >
